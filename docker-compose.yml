@@ -1,0 +1,66 @@
+services:
+  # ─── Base de Datos PostgreSQL ───────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: pfinance_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pfinance
+      POSTGRES_USER: pfinance_user
+      POSTGRES_PASSWORD: pfinance_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pfinance_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pfinance_user -d pfinance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Laravel (PHP 8.3) ──────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pfinance_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      APP_NAME: Pfinance
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: pfinance
+      DB_USERNAME: pfinance_user
+      DB_PASSWORD: pfinance_secret
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── Frontend React + TypeScript (Vite) ─────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pfinance_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+    depends_on:
+      - backend
+
+volumes:
+  pfinance_db_data:
