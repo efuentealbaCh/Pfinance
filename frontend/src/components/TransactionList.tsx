@@ -1,0 +1,289 @@
+import {
+    Paper,
+    Text,
+    Group,
+    Badge,
+    ActionIcon,
+    Stack,
+    Tooltip,
+    Select,
+    SegmentedControl,
+    Button,
+} from '@mantine/core';
+import { DateInput } from '@mantine/dates';
+import { useState } from 'react';
+
+interface Transaction {
+    id: string;
+    user_account_id: string;
+    category_id: string;
+    amount: string;
+    description: string | null;
+    date: string;
+    type: 'income' | 'expense';
+    is_shared: boolean;
+    category: { id: string; name: string; icon: string | null; color: string | null };
+    user_account: {
+        id: string;
+        identifier: string | null;
+        bank: { id: string; name: string };
+    };
+}
+
+interface Category {
+    id: string;
+    name: string;
+    icon: string | null;
+}
+
+interface UserAccount {
+    id: string;
+    identifier: string | null;
+    bank: { id: string; name: string };
+}
+
+interface TransactionListProps {
+    transactions: Transaction[];
+    categories: Category[];
+    accounts: UserAccount[];
+    onEdit: (transaction: Transaction) => void;
+    onDelete: (id: string) => void;
+    onFilterChange: (filters: TransactionFilters) => void;
+    hasMore: boolean;
+    onLoadMore: () => void;
+    loadingMore: boolean;
+}
+
+export interface TransactionFilters {
+    type: string;
+    category_id: string;
+    user_account_id: string;
+    date_from: Date | null;
+    date_to: Date | null;
+}
+
+export default function TransactionList({
+    transactions,
+    categories,
+    accounts,
+    onEdit,
+    onDelete,
+    onFilterChange,
+    hasMore,
+    onLoadMore,
+    loadingMore,
+}: TransactionListProps) {
+    const [filters, setFilters] = useState<TransactionFilters>({
+        type: '',
+        category_id: '',
+        user_account_id: '',
+        date_from: null,
+        date_to: null,
+    });
+
+    const updateFilter = (key: keyof TransactionFilters, value: string | Date | null) => {
+        const newFilters = { ...filters, [key]: value };
+        setFilters(newFilters);
+        onFilterChange(newFilters);
+    };
+
+    return (
+        <Stack gap="md">
+            {/* ─── Filtros ─────────────────────────────────────── */}
+            <Paper withBorder p="md" radius="md" bg="dark.6">
+                <Text size="sm" fw={600} mb="sm">
+                    🔍 Filtros
+                </Text>
+                <Stack gap="sm">
+                    <Group grow>
+                        <div>
+                            <Text size="xs" c="dimmed" mb={4}>
+                                Tipo
+                            </Text>
+                            <SegmentedControl
+                                fullWidth
+                                size="xs"
+                                data={[
+                                    { label: 'Todos', value: '' },
+                                    { label: '📉 Gastos', value: 'expense' },
+                                    { label: '📈 Ingresos', value: 'income' },
+                                ]}
+                                value={filters.type}
+                                onChange={(value) => updateFilter('type', value)}
+                                radius="md"
+                            />
+                        </div>
+                    </Group>
+
+                    <Group grow>
+                        <Select
+                            size="xs"
+                            placeholder="Todas las categorías"
+                            clearable
+                            searchable
+                            data={categories.map((c) => ({
+                                value: c.id,
+                                label: `${c.icon || '📁'} ${c.name}`,
+                            }))}
+                            value={filters.category_id || null}
+                            onChange={(value) => updateFilter('category_id', value || '')}
+                            radius="md"
+                        />
+                        <Select
+                            size="xs"
+                            placeholder="Todas las cuentas"
+                            clearable
+                            searchable
+                            data={accounts.map((a) => ({
+                                value: a.id,
+                                label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
+                            }))}
+                            value={filters.user_account_id || null}
+                            onChange={(value) => updateFilter('user_account_id', value || '')}
+                            radius="md"
+                        />
+                    </Group>
+
+                    <Group grow>
+                        <DateInput
+                            size="xs"
+                            placeholder="Desde"
+                            clearable
+                            valueFormat="DD/MM/YYYY"
+                            value={filters.date_from}
+                            onChange={(value) => updateFilter('date_from', value)}
+                            radius="md"
+                        />
+                        <DateInput
+                            size="xs"
+                            placeholder="Hasta"
+                            clearable
+                            valueFormat="DD/MM/YYYY"
+                            value={filters.date_to}
+                            onChange={(value) => updateFilter('date_to', value)}
+                            radius="md"
+                        />
+                    </Group>
+                </Stack>
+            </Paper>
+
+            {/* ─── Lista de Transacciones ──────────────────────── */}
+            {transactions.length === 0 ? (
+                <Text c="dimmed" ta="center" size="sm" py="xl">
+                    No se encontraron transacciones. ¡Registra una!
+                </Text>
+            ) : (
+                transactions.map((tx) => (
+                    <Paper
+                        key={tx.id}
+                        withBorder
+                        p="md"
+                        radius="md"
+                        style={{
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                            cursor: 'default',
+                            borderLeft: `3px solid ${tx.type === 'income' ? '#12b886' : '#fa5252'}`,
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                    >
+                        <Group justify="space-between" wrap="nowrap">
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <Group gap="xs" mb={4}>
+                                    <Text fw={600} size="sm">
+                                        {tx.category?.icon || '📁'} {tx.category?.name}
+                                    </Text>
+                                    <Badge
+                                        size="xs"
+                                        variant="light"
+                                        color={tx.type === 'income' ? 'teal' : 'red'}
+                                    >
+                                        {tx.type === 'income' ? 'Ingreso' : 'Gasto'}
+                                    </Badge>
+                                    {tx.is_shared && (
+                                        <Badge size="xs" variant="dot" color="blue">
+                                            Compartida
+                                        </Badge>
+                                    )}
+                                </Group>
+                                <Group gap="xs">
+                                    <Text c="dimmed" size="xs">
+                                        {tx.user_account?.bank?.name}
+                                        {tx.user_account?.identifier ? ` — ${tx.user_account.identifier}` : ''}
+                                    </Text>
+                                    <Text c="dimmed" size="xs">
+                                        •
+                                    </Text>
+                                    <Text c="dimmed" size="xs">
+                                        {new Date(tx.date).toLocaleDateString('es-CL')}
+                                    </Text>
+                                </Group>
+                                {tx.description && (
+                                    <Text c="dimmed" size="xs" mt={4} lineClamp={2}>
+                                        {tx.description}
+                                    </Text>
+                                )}
+                            </div>
+
+                            <Group gap="xs" wrap="nowrap">
+                                <Text
+                                    fw={700}
+                                    size="lg"
+                                    c={tx.type === 'income' ? 'teal' : 'red'}
+                                    style={{ whiteSpace: 'nowrap' }}
+                                >
+                                    {tx.type === 'income' ? '+' : '-'}$
+                                    {Number(tx.amount).toLocaleString('es-CL', {
+                                        minimumFractionDigits: 2,
+                                    })}
+                                </Text>
+
+                                <Tooltip label="Editar">
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="blue"
+                                        size="sm"
+                                        onClick={() => onEdit(tx)}
+                                    >
+                                        ✏️
+                                    </ActionIcon>
+                                </Tooltip>
+
+                                <Tooltip label="Eliminar">
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="red"
+                                        size="sm"
+                                        onClick={() => onDelete(tx.id)}
+                                    >
+                                        🗑️
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
+                        </Group>
+                    </Paper>
+                ))
+            )}
+
+            {/* ─── Cargar más ──────────────────────────────────── */}
+            {hasMore && (
+                <Button
+                    variant="light"
+                    color="gray"
+                    radius="md"
+                    fullWidth
+                    loading={loadingMore}
+                    onClick={onLoadMore}
+                >
+                    Cargar más transacciones
+                </Button>
+            )}
+        </Stack>
+    );
+}

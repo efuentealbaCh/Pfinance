@@ -1,0 +1,271 @@
+import { useState, useEffect } from 'react';
+import {
+    Modal,
+    NumberInput,
+    Select,
+    Button,
+    Stack,
+    Alert,
+    Textarea,
+    SegmentedControl,
+    Switch,
+    Text,
+} from '@mantine/core';
+import { DateInput } from '@mantine/dates';
+import { useForm } from '@mantine/form';
+import api from '../api/axios';
+
+interface Category {
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+}
+
+interface UserAccount {
+    id: string;
+    identifier: string | null;
+    bank: { id: string; name: string };
+    account_type: { id: string; name: string };
+}
+
+interface TransactionFormData {
+    user_account_id: string;
+    category_id: string;
+    type: string;
+    amount: number;
+    date: Date | null;
+    description: string;
+    is_shared: boolean;
+}
+
+interface TransactionEditData {
+    id: string;
+    user_account_id: string;
+    category_id: string;
+    type: string;
+    amount: number;
+    date: string;
+    description: string;
+    is_shared: boolean;
+}
+
+interface TransactionModalProps {
+    opened: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    editData?: TransactionEditData | null;
+}
+
+export default function TransactionModal({
+    opened,
+    onClose,
+    onSuccess,
+    editData,
+}: TransactionModalProps) {
+    const [accounts, setAccounts] = useState<UserAccount[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const form = useForm<TransactionFormData>({
+        initialValues: {
+            user_account_id: '',
+            category_id: '',
+            type: 'expense',
+            amount: 0,
+            date: new Date(),
+            description: '',
+            is_shared: true,
+        },
+        validate: {
+            user_account_id: (value) => (value ? null : 'Selecciona una cuenta'),
+            category_id: (value) => (value ? null : 'Selecciona una categoría'),
+            amount: (value) => (value >= 0.01 ? null : 'El monto debe ser mayor a cero'),
+            date: (value) => (value ? null : 'La fecha es obligatoria'),
+        },
+    });
+
+    // Cargar catálogos al abrir el modal
+    useEffect(() => {
+        if (opened) {
+            const fetchCatalogs = async () => {
+                try {
+                    const [accountsRes, categoriesRes] = await Promise.all([
+                        api.get('/user-accounts'),
+                        api.get('/categories'),
+                    ]);
+                    setAccounts(accountsRes.data.accounts);
+                    setCategories(categoriesRes.data);
+                } catch {
+                    setError('Error al cargar los catálogos.');
+                }
+            };
+            fetchCatalogs();
+        }
+    }, [opened]);
+
+    // Rellenar formulario si es edición
+    useEffect(() => {
+        if (editData) {
+            form.setValues({
+                user_account_id: editData.user_account_id,
+                category_id: editData.category_id,
+                type: editData.type,
+                amount: editData.amount,
+                date: new Date(editData.date),
+                description: editData.description || '',
+                is_shared: editData.is_shared,
+            });
+        } else {
+            form.reset();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editData, opened]);
+
+    const handleSubmit = async (values: TransactionFormData) => {
+        setError('');
+        setLoading(true);
+        try {
+            const payload = {
+                ...values,
+                date: values.date?.toISOString().split('T')[0], // YYYY-MM-DD
+            };
+
+            if (editData) {
+                await api.put(`/transactions/${editData.id}`, payload);
+            } else {
+                await api.post('/transactions', payload);
+            }
+            form.reset();
+            onSuccess();
+            onClose();
+        } catch (err: unknown) {
+            const axiosError = err as {
+                response?: { data?: { message?: string; errors?: Record<string, string[]> } };
+            };
+            if (axiosError.response?.data?.errors) {
+                const firstError = Object.values(axiosError.response.data.errors)[0];
+                setError(firstError?.[0] || 'Error al guardar la transacción.');
+            } else {
+                setError(axiosError.response?.data?.message || 'Error al guardar la transacción.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Modal
+            opened={opened}
+            onClose={onClose}
+            title={editData ? '✏️ Editar transacción' : '💰 Nueva transacción'}
+            centered
+            radius="lg"
+            size="md"
+        >
+            <form onSubmit={form.onSubmit(handleSubmit)}>
+                <Stack>
+                    {error && (
+                        <Alert color="red" variant="light" radius="md">
+                            {error}
+                        </Alert>
+                    )}
+
+                    {/* Tipo: Ingreso / Gasto */}
+                    <div>
+                        <Text size="sm" fw={500} mb={4}>
+                            Tipo
+                        </Text>
+                        <SegmentedControl
+                            fullWidth
+                            data={[
+                                { label: '📉 Gasto', value: 'expense' },
+                                { label: '📈 Ingreso', value: 'income' },
+                            ]}
+                            color={form.values.type === 'income' ? 'teal' : 'red'}
+                            radius="md"
+                            {...form.getInputProps('type')}
+                        />
+                    </div>
+
+                    <Select
+                        label="Cuenta"
+                        placeholder="Selecciona una cuenta"
+                        data={accounts.map((a) => ({
+                            value: a.id,
+                            label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
+                        }))}
+                        required
+                        searchable
+                        radius="md"
+                        {...form.getInputProps('user_account_id')}
+                    />
+
+                    <Select
+                        label="Categoría"
+                        placeholder="Selecciona una categoría"
+                        data={categories.map((c) => ({
+                            value: c.id,
+                            label: `${c.icon || '📁'} ${c.name}`,
+                        }))}
+                        required
+                        searchable
+                        radius="md"
+                        {...form.getInputProps('category_id')}
+                    />
+
+                    <NumberInput
+                        label="Monto"
+                        placeholder="0.00"
+                        min={0.01}
+                        decimalScale={2}
+                        fixedDecimalScale
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        required
+                        radius="md"
+                        {...form.getInputProps('amount')}
+                    />
+
+                    <DateInput
+                        label="Fecha"
+                        placeholder="Selecciona una fecha"
+                        required
+                        radius="md"
+                        valueFormat="DD/MM/YYYY"
+                        {...form.getInputProps('date')}
+                    />
+
+                    <Textarea
+                        label="Descripción"
+                        placeholder="Ej: Compra en supermercado"
+                        maxLength={500}
+                        autosize
+                        minRows={2}
+                        maxRows={4}
+                        radius="md"
+                        {...form.getInputProps('description')}
+                    />
+
+                    <Switch
+                        label="¿Transacción compartida?"
+                        description="Visible para otros usuarios vinculados"
+                        color="teal"
+                        {...form.getInputProps('is_shared', { type: 'checkbox' })}
+                    />
+
+                    <Button
+                        type="submit"
+                        fullWidth
+                        color={form.values.type === 'income' ? 'teal' : 'red'}
+                        radius="md"
+                        loading={loading}
+                    >
+                        {editData ? 'Guardar cambios' : 'Registrar transacción'}
+                    </Button>
+                </Stack>
+            </form>
+        </Modal>
+    );
+}
