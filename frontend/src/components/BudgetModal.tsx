@@ -10,13 +10,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
-
-interface Category {
-    id: string;
-    name: string;
-    icon: string | null;
-}
+import { useCatalogs, useCreateBudget, useUpdateBudget } from '../api/queries';
 
 interface BudgetEditData {
     id: string;
@@ -39,8 +33,12 @@ const PERIOD_OPTIONS = [
 ];
 
 export default function BudgetModal({ opened, onClose, onSuccess, editData }: BudgetModalProps) {
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(false);
+    const { data: catalogs } = useCatalogs();
+    const categories = catalogs?.categories || [];
+
+    const createMutation = useCreateBudget();
+    const updateMutation = useUpdateBudget();
+    const loading = createMutation.isPending || updateMutation.isPending;
 
     const form = useForm({
         initialValues: {
@@ -54,21 +52,6 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
             period: (v) => (!v ? 'Selecciona un período' : null),
         },
     });
-
-    // Cargar categorías
-    useEffect(() => {
-        if (opened) {
-            api.get('/categories')
-                .then((res) => setCategories(res.data))
-                .catch(() =>
-                    notifications.show({
-                        title: 'Error',
-                        message: 'No se pudieron cargar las categorías.',
-                        color: 'red',
-                    })
-                );
-        }
-    }, [opened]);
 
     // Cargar datos al editar
     useEffect(() => {
@@ -86,22 +69,17 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, editData]);
 
-    const handleSubmit = async (values: typeof form.values) => {
-        setLoading(true);
-        try {
-            if (editData) {
-                await api.put(`/budgets/${editData.id}`, values);
-            } else {
-                await api.post('/budgets', values);
-            }
+    const handleSubmit = (values: typeof form.values) => {
+        const handleSuccess = () => {
             onSuccess();
             onClose();
-        } catch (err: unknown) {
+        };
+
+        const handleError = (err: any) => {
             const axiosError = err as {
                 response?: { data?: { message?: string; errors?: Record<string, string[]> } };
             };
 
-            // Mostrar errores de validación del backend
             if (axiosError.response?.data?.errors) {
                 const errors = axiosError.response.data.errors;
                 Object.entries(errors).forEach(([field, messages]) => {
@@ -116,8 +94,18 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
                     color: 'red',
                 });
             }
-        } finally {
-            setLoading(false);
+        };
+
+        if (editData) {
+            updateMutation.mutate(
+                { id: editData.id, data: values },
+                { onSuccess: handleSuccess, onError: handleError }
+            );
+        } else {
+            createMutation.mutate(
+                values,
+                { onSuccess: handleSuccess, onError: handleError }
+            );
         }
     };
 

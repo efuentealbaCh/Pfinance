@@ -10,7 +10,7 @@ import {
     Divider,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useTransactions, useCatalogs, useDeleteTransaction } from '../api/queries';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
 import ExportModal from '../components/ExportModal';
@@ -52,8 +52,6 @@ interface PaginatedResponse {
 
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [accounts, setAccounts] = useState<UserAccount[]>([]);
     const [page, setPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -71,72 +69,48 @@ export default function TransactionsPage() {
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
     const [exportModalOpened, setExportModalOpened] = useState(false);
 
-    // Cargar catálogos una sola vez
+    // Queries
+    const { data: catalogs } = useCatalogs();
+    const categories = catalogs?.categories || [];
+    const accounts = catalogs?.userAccounts || [];
+
+    const queryParams: Record<string, string> = { page: String(page) };
+    if (filters.type) queryParams.type = filters.type;
+    if (filters.category_id) queryParams.category_id = filters.category_id;
+    if (filters.user_account_id) queryParams.user_account_id = filters.user_account_id;
+    if (filters.date_from) queryParams.date_from = filters.date_from.toISOString().split('T')[0];
+    if (filters.date_to) queryParams.date_to = filters.date_to.toISOString().split('T')[0];
+    if (filters.amount_min) queryParams.amount_min = filters.amount_min;
+    if (filters.amount_max) queryParams.amount_max = filters.amount_max;
+
+    const { data: txData, isFetching } = useTransactions(queryParams);
+    const deleteMutation = useDeleteTransaction();
+
     useEffect(() => {
-        const fetchCatalogs = async () => {
-            try {
-                const [accountsRes, categoriesRes] = await Promise.all([
-                    api.get('/user-accounts'),
-                    api.get('/categories'),
-                ]);
-                setAccounts(accountsRes.data.accounts);
-                setCategories(categoriesRes.data);
-            } catch {
-                notifications.show({
-                    title: 'Error',
-                    message: 'No se pudieron cargar los catálogos.',
-                    color: 'red',
+        if (txData) {
+            if (page === 1) {
+                setTransactions(txData.data);
+            } else {
+                setTransactions((prev) => {
+                    // Prevent duplicates in StrictMode
+                    const existingIds = new Set(prev.map(t => t.id));
+                    const newItems = txData.data.filter((t: any) => !existingIds.has(t.id));
+                    return [...prev, ...newItems];
                 });
             }
-        };
-        fetchCatalogs();
-    }, []);
+            setLastPage(txData.last_page);
+            setLoadingMore(false);
+        }
+    }, [txData, page]);
 
-    const fetchTransactions = useCallback(
-        async (pageNum: number, append = false) => {
-            try {
-                const params: Record<string, string> = { page: String(pageNum) };
-                if (filters.type) params.type = filters.type;
-                if (filters.category_id) params.category_id = filters.category_id;
-                if (filters.user_account_id) params.user_account_id = filters.user_account_id;
-                if (filters.date_from) params.date_from = filters.date_from.toISOString().split('T')[0];
-                if (filters.date_to) params.date_to = filters.date_to.toISOString().split('T')[0];
-                if (filters.amount_min) params.amount_min = filters.amount_min;
-                if (filters.amount_max) params.amount_max = filters.amount_max;
-
-                const res = await api.get<PaginatedResponse>('/transactions', { params });
-
-                if (append) {
-                    setTransactions((prev) => [...prev, ...res.data.data]);
-                } else {
-                    setTransactions(res.data.data);
-                }
-                setPage(res.data.current_page);
-                setLastPage(res.data.last_page);
-            } catch {
-                notifications.show({
-                    title: 'Error',
-                    message: 'No se pudieron cargar las transacciones.',
-                    color: 'red',
-                });
-            }
-        },
-        [filters]
-    );
-
-    // Recargar al cambiar filtros
-    useEffect(() => {
-        fetchTransactions(1);
-    }, [fetchTransactions]);
-
-    const handleLoadMore = async () => {
+    const handleLoadMore = () => {
         setLoadingMore(true);
-        await fetchTransactions(page + 1, true);
-        setLoadingMore(false);
+        setPage((p) => p + 1);
     };
 
     const handleFilterChange = (newFilters: TransactionFilters) => {
         setFilters(newFilters);
+        setPage(1); // Reset page on filter change
     };
 
     const handleEdit = (transaction: Transaction) => {
@@ -146,21 +120,23 @@ export default function TransactionsPage() {
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('¿Estás seguro de eliminar esta transacción?')) return;
-        try {
-            await api.delete(`/transactions/${id}`);
-            notifications.show({
-                title: 'Transacción eliminada',
-                message: 'La transacción fue eliminada correctamente.',
-                color: 'teal',
-            });
-            fetchTransactions(1);
-        } catch {
-            notifications.show({
-                title: 'Error',
-                message: 'No se pudo eliminar la transacción.',
-                color: 'red',
-            });
-        }
+        deleteMutation.mutate(id, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Transacción eliminada',
+                    message: 'La transacción fue eliminada correctamente.',
+                    color: 'teal',
+                });
+                setPage(1); // Refresh page 1
+            },
+            onError: () => {
+                notifications.show({
+                    title: 'Error',
+                    message: 'No se pudo eliminar la transacción.',
+                    color: 'red',
+                });
+            }
+        });
     };
 
     const handleModalClose = () => {
@@ -176,7 +152,7 @@ export default function TransactionsPage() {
                 : 'Tu nueva transacción fue registrada.',
             color: 'teal',
         });
-        fetchTransactions(1);
+        setPage(1); // Refresh page 1
     };
 
     // Calcular resumen del listado actual

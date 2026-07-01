@@ -14,7 +14,7 @@ import {
     SimpleGrid,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useBudgets, useDeleteBudget } from '../api/queries';
 import BudgetModal from '../components/BudgetModal';
 
 interface BudgetData {
@@ -52,7 +52,10 @@ function formatCurrency(value: number): string {
 }
 
 export default function BudgetsPage() {
-    const [budgets, setBudgets] = useState<BudgetData[]>([]);
+    const { data: budgetsResponse, isLoading, isError } = useBudgets();
+    const budgets = budgetsResponse?.budgets || [];
+    const deleteMutation = useDeleteBudget();
+
     const [modalOpened, setModalOpened] = useState(false);
     const [editBudget, setEditBudget] = useState<{
         id: string;
@@ -61,22 +64,15 @@ export default function BudgetsPage() {
         period: string;
     } | null>(null);
 
-    const fetchBudgets = useCallback(async () => {
-        try {
-            const res = await api.get('/budgets');
-            setBudgets(res.data.budgets);
-        } catch {
+    useEffect(() => {
+        if (isError) {
             notifications.show({
                 title: 'Error',
                 message: 'No se pudieron cargar los presupuestos.',
                 color: 'red',
             });
         }
-    }, []);
-
-    useEffect(() => {
-        fetchBudgets();
-    }, [fetchBudgets]);
+    }, [isError]);
 
     const handleEdit = (budget: BudgetData) => {
         setEditBudget({
@@ -88,28 +84,25 @@ export default function BudgetsPage() {
         setModalOpened(true);
     };
 
-    const handleDelete = async (budget: BudgetData) => {
-        if (
-            !window.confirm(
-                `¿Eliminar el presupuesto de "${budget.category.name}"?`
-            )
-        )
-            return;
-        try {
-            await api.delete(`/budgets/${budget.id}`);
-            notifications.show({
-                title: 'Presupuesto eliminado',
-                message: `El presupuesto de "${budget.category.name}" fue eliminado.`,
-                color: 'teal',
-            });
-            fetchBudgets();
-        } catch {
-            notifications.show({
-                title: 'Error',
-                message: 'No se pudo eliminar el presupuesto.',
-                color: 'red',
-            });
-        }
+    const handleDelete = (budget: BudgetData) => {
+        if (!window.confirm(`¿Eliminar el presupuesto de "${budget.category.name}"?`)) return;
+
+        deleteMutation.mutate(budget.id, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Presupuesto eliminado',
+                    message: `El presupuesto de "${budget.category.name}" fue eliminado.`,
+                    color: 'teal',
+                });
+            },
+            onError: () => {
+                notifications.show({
+                    title: 'Error',
+                    message: 'No se pudo eliminar el presupuesto.',
+                    color: 'red',
+                });
+            }
+        });
     };
 
     const handleModalClose = () => {
@@ -125,7 +118,6 @@ export default function BudgetsPage() {
                 : 'El nuevo presupuesto fue registrado.',
             color: 'teal',
         });
-        fetchBudgets();
     };
 
     return (

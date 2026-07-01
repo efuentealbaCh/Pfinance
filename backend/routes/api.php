@@ -12,10 +12,11 @@ use App\Models\AccountType;
 use App\Models\Bank;
 use App\Models\Category;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
 
 // ─── Rutas Públicas ──────────────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:auth');
 
 // ─── Rutas Protegidas (requieren token) ──────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -25,9 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile',          [AuthController::class, 'updateProfile']);
     Route::put('/profile/password', [AuthController::class, 'changePassword']);
 
-    // Catálogos de solo lectura
-    Route::get('/banks', fn() => response()->json(Bank::all()));
-    Route::get('/account-types', fn() => response()->json(AccountType::all()));
+    // Catálogos de solo lectura (Caché infinito porque rara vez cambian)
+    Route::get('/banks', fn() => response()->json(Cache::rememberForever('banks', fn() => Bank::all())));
+    Route::get('/account-types', fn() => response()->json(Cache::rememberForever('account-types', fn() => AccountType::all())));
 
     // Categorías (CRUD completo)
     Route::apiResource('categories', CategoryController::class);

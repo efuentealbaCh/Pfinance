@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useDashboardSummary } from '../api/queries';
 import {
     Paper,
     Text,
@@ -11,6 +12,8 @@ import {
     Progress,
     Badge,
     SegmentedControl,
+    Loader,
+    Center,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import {
@@ -28,7 +31,6 @@ import {
     Cell,
     Legend,
 } from 'recharts';
-import api from '../api/axios';
 import { notifications } from '@mantine/notifications';
 
 interface UserAccount {
@@ -37,63 +39,11 @@ interface UserAccount {
     bank: { id: string; name: string };
 }
 
-interface AnalyticsSummary {
-    totalIncome: number;
-    totalExpense: number;
-    balance: number;
-}
-
-interface ExpenseCategory {
-    name: string;
-    total: number;
-    color: string;
-}
-
-interface ChartDataPoint {
-    date: string;
-    income: number;
-    expense: number;
-}
-
-interface BudgetProgress {
-    id: string;
-    category_name: string;
-    category_icon: string | null;
-    category_color: string;
-    amount: number;
-    spent: number;
-    percentage: number;
-    period: string;
-    alert: boolean;
-}
-
-interface SavingsGoalProgress {
-    id: string;
-    name: string;
-    icon: string | null;
-    color: string;
-    target_amount: number;
-    current_amount: number;
-    percentage: number;
-    remaining: number;
-    is_completed: boolean;
-    deadline: string | null;
-}
-
 interface DashboardAnalyticsProps {
     accounts: UserAccount[];
 }
 
 export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps) {
-    const [summary, setSummary] = useState<AnalyticsSummary>({
-        totalIncome: 0,
-        totalExpense: 0,
-        balance: 0,
-    });
-    const [expensesByCategory, setExpensesByCategory] = useState<ExpenseCategory[]>([]);
-    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-    const [budgetProgress, setBudgetProgress] = useState<BudgetProgress[]>([]);
-    const [savingsGoals, setSavingsGoals] = useState<SavingsGoalProgress[]>([]);
     const [alertsShown, setAlertsShown] = useState(false);
 
     const [accountId, setAccountId] = useState<string | null>(null);
@@ -120,37 +70,34 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
         setDateTo(to);
     };
 
-    const fetchAnalytics = useCallback(async () => {
-        try {
-            const params: Record<string, string> = {};
-            if (accountId) params.user_account_id = accountId;
-            if (dateFrom) params.date_from = dateFrom.toISOString().split('T')[0];
-            if (dateTo) params.date_to = dateTo.toISOString().split('T')[0];
+    const params: Record<string, string> = {};
+    if (accountId) params.user_account_id = accountId;
+    if (dateFrom) params.date_from = dateFrom.toISOString().split('T')[0];
+    if (dateTo) params.date_to = dateTo.toISOString().split('T')[0];
 
-            const res = await api.get('/dashboard/summary', { params });
-            setSummary(res.data.summary);
-            setExpensesByCategory(res.data.expensesByCategory);
-            setChartData(res.data.chartData);
-            setBudgetProgress(res.data.budgetProgress || []);
-            setSavingsGoals(res.data.savingsGoals || []);
-        } catch {
+    const { data, isLoading, isError } = useDashboardSummary(params);
+
+    const summary = data?.summary || { totalIncome: 0, totalExpense: 0, balance: 0 };
+    const expensesByCategory = data?.expensesByCategory || [];
+    const chartData = data?.chartData || [];
+    const budgetProgress = data?.budgetProgress || [];
+    const savingsGoals = data?.savingsGoals || [];
+
+    useEffect(() => {
+        if (isError) {
             notifications.show({
                 title: 'Error',
                 message: 'No se pudieron cargar las analíticas del dashboard.',
                 color: 'red',
             });
         }
-    }, [accountId, dateFrom, dateTo]);
-
-    useEffect(() => {
-        fetchAnalytics();
-    }, [fetchAnalytics]);
+    }, [isError]);
 
     // Mostrar alertas de presupuestos al 80%+ (solo una vez por carga)
     useEffect(() => {
         if (budgetProgress.length > 0 && !alertsShown) {
-            const alertBudgets = budgetProgress.filter((b) => b.alert);
-            alertBudgets.forEach((b) => {
+            const alertBudgets = budgetProgress.filter((b: any) => b.alert);
+            alertBudgets.forEach((b: any) => {
                 notifications.show({
                     title: b.percentage >= 100
                         ? `⛔ Presupuesto excedido: ${b.category_name}`
@@ -278,6 +225,12 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                 </Stack>
             </Paper>
 
+            {isLoading ? (
+                <Center py="xl">
+                    <Loader color="teal" type="dots" />
+                </Center>
+            ) : (
+                <>
             {/* ─── Tarjetas de Resumen ───────────────────────────── */}
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                 <Paper withBorder p="xl" radius="md" bg="dark.6">
@@ -564,6 +517,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         </Stack>
                     </Paper>
                 </>
+            )}
+            </>
             )}
         </Stack>
     );

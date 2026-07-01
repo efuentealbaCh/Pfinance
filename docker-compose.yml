@@ -18,15 +18,13 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── Backend Laravel (PHP 8.3) ──────────────────────────────
+  # ─── Backend Laravel (PHP 8.3 FPM) ──────────────────────────
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: pfinance_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app
     environment:
@@ -46,6 +44,19 @@ services:
       db:
         condition: service_healthy
 
+  # ─── Nginx (Proxy Reverso para Laravel) ───────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: pfinance_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/app
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
   # ─── Frontend React + TypeScript (Vite) ─────────────────────
   frontend:
     build:
@@ -60,7 +71,7 @@ services:
       - /app/node_modules
     command: npm run dev -- --host
     depends_on:
-      - backend
+      - nginx
 
 volumes:
   pfinance_db_data:

@@ -23,7 +23,7 @@ class AccountTypeSeeder extends Seeder
         ];
 
         foreach ($types as $type) {
-            AccountType::create($type);
+            AccountType::firstOrCreate(['name' => $type['name']], $type);
         }
     }
 }

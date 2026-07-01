@@ -14,13 +14,14 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/axios';
+import { useUpdateProfile, useUpdatePassword } from '../api/queries';
 
 export default function ProfilePage() {
     const { user } = useAuth();
+    const updateProfileMutation = useUpdateProfile();
+    const updatePasswordMutation = useUpdatePassword();
 
     // ─── Formulario de perfil ──────────────────────────────
-    const [profileLoading, setProfileLoading] = useState(false);
     const [profileError, setProfileError] = useState('');
 
     const profileForm = useForm({
@@ -34,33 +35,31 @@ export default function ProfilePage() {
         },
     });
 
-    const handleProfileSubmit = async (values: { name: string; email: string }) => {
+    const handleProfileSubmit = (values: { name: string; email: string }) => {
         setProfileError('');
-        setProfileLoading(true);
-        try {
-            await api.put('/profile', values);
-            notifications.show({
-                title: 'Perfil actualizado',
-                message: 'Tu información fue guardada correctamente.',
-                color: 'teal',
-            });
-        } catch (err: unknown) {
-            const axiosError = err as {
-                response?: { data?: { message?: string; errors?: Record<string, string[]> } };
-            };
-            if (axiosError.response?.data?.errors) {
-                const firstError = Object.values(axiosError.response.data.errors)[0];
-                setProfileError(firstError?.[0] || 'Error al actualizar el perfil.');
-            } else {
-                setProfileError(axiosError.response?.data?.message || 'Error al actualizar el perfil.');
+        updateProfileMutation.mutate(values, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Perfil actualizado',
+                    message: 'Tu información fue guardada correctamente.',
+                    color: 'teal',
+                });
+            },
+            onError: (err: any) => {
+                const axiosError = err as {
+                    response?: { data?: { message?: string; errors?: Record<string, string[]> } };
+                };
+                if (axiosError.response?.data?.errors) {
+                    const firstError = Object.values(axiosError.response.data.errors)[0];
+                    setProfileError(firstError?.[0] || 'Error al actualizar el perfil.');
+                } else {
+                    setProfileError(axiosError.response?.data?.message || 'Error al actualizar el perfil.');
+                }
             }
-        } finally {
-            setProfileLoading(false);
-        }
+        });
     };
 
     // ─── Formulario de contraseña ──────────────────────────
-    const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordError, setPasswordError] = useState('');
 
     const passwordForm = useForm({
@@ -78,36 +77,35 @@ export default function ProfilePage() {
         },
     });
 
-    const handlePasswordSubmit = async (values: {
+    const handlePasswordSubmit = (values: {
         current_password: string;
         new_password: string;
         new_password_confirmation: string;
     }) => {
         setPasswordError('');
-        setPasswordLoading(true);
-        try {
-            await api.put('/profile/password', values);
-            notifications.show({
-                title: 'Contraseña actualizada',
-                message: 'Tu contraseña fue cambiada exitosamente.',
-                color: 'teal',
-            });
-            passwordForm.reset();
-        } catch (err: unknown) {
-            const axiosError = err as {
-                response?: { data?: { message?: string; errors?: Record<string, string[]> } };
-            };
-            if (axiosError.response?.data?.errors) {
-                const firstError = Object.values(axiosError.response.data.errors)[0];
-                setPasswordError(firstError?.[0] || 'Error al cambiar la contraseña.');
-            } else {
-                setPasswordError(
-                    axiosError.response?.data?.message || 'Error al cambiar la contraseña.'
-                );
+        updatePasswordMutation.mutate(values, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Contraseña actualizada',
+                    message: 'Tu contraseña fue cambiada exitosamente.',
+                    color: 'teal',
+                });
+                passwordForm.reset();
+            },
+            onError: (err: any) => {
+                const axiosError = err as {
+                    response?: { data?: { message?: string; errors?: Record<string, string[]> } };
+                };
+                if (axiosError.response?.data?.errors) {
+                    const firstError = Object.values(axiosError.response.data.errors)[0];
+                    setPasswordError(firstError?.[0] || 'Error al cambiar la contraseña.');
+                } else {
+                    setPasswordError(
+                        axiosError.response?.data?.message || 'Error al cambiar la contraseña.'
+                    );
+                }
             }
-        } finally {
-            setPasswordLoading(false);
-        }
+        });
     };
 
     return (
@@ -142,7 +140,7 @@ export default function ProfilePage() {
                             required
                             {...profileForm.getInputProps('email')}
                         />
-                        <Button type="submit" color="teal" radius="md" loading={profileLoading}>
+                        <Button type="submit" color="teal" radius="md" loading={updateProfileMutation.isPending}>
                             Guardar cambios
                         </Button>
                     </Stack>
@@ -184,7 +182,7 @@ export default function ProfilePage() {
                             required
                             {...passwordForm.getInputProps('new_password_confirmation')}
                         />
-                        <Button type="submit" color="violet" radius="md" loading={passwordLoading}>
+                        <Button type="submit" color="violet" radius="md" loading={updatePasswordMutation.isPending}>
                             Cambiar contraseña
                         </Button>
                     </Stack>

@@ -28,7 +28,7 @@ class BankSeeder extends Seeder
         ];
 
         foreach ($banks as $bank) {
-            Bank::create($bank);
+            Bank::firstOrCreate(['name' => $bank['name']], $bank);
         }
     }
 }

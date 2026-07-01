@@ -47,7 +47,7 @@
 
 ## ⚙️ Mejoras Técnicas — Backend
 
-### [ ] 6. docker-compose.prod.yml (separar dev/prod)
+### [x] 6. docker-compose.prod.yml (separar dev/prod)
 
 - Producción: Nginx + PHP-FPM en vez de `php artisan serve`
 - Frontend: build estático de Vite servido por Nginx
@@ -58,14 +58,14 @@
   docker-compose.prod.yml    ← producción
   ```
 
-### [ ] 7. Nginx como proxy reverso
+### [x] 7. Nginx como proxy reverso
 
 - Reemplazar `php artisan serve` (no apto para producción)
 - Configurar `nginx.conf` con `fastcgi_pass` apuntando a PHP-FPM
 - Añadir servicio `nginx` en docker-compose.prod.yml
 - Soporte HTTPS con certificados Let's Encrypt (Certbot)
 
-### [ ] 8. Seeders completos
+### [x] 8. Seeders completos
 
 - `BankSeeder`: listado de bancos comunes por defecto
 - `AccountTypeSeeder`: Cuenta Corriente, Cuenta Vista, Tarjeta de Crédito, etc.
@@ -79,7 +79,7 @@
 - Controlar exactamente qué campos se exponen en la API
 - Evitar exponer campos sensibles (`password`, `remember_token`, etc.)
 
-### [ ] 10. Rate Limiting en Auth
+### [x] 10. Rate Limiting en Auth
 
 - Limitar intentos en `POST /login` y `POST /register`
 - Usar `ThrottleRequests` middleware de Laravel
@@ -118,19 +118,19 @@
 - Selector de idioma en el perfil del usuario
 - Formateo de fechas y moneda según locale (`Intl.NumberFormat`)
 
-### [ ] 15. Dark Mode
+### [x] 15. Dark Mode
 
-- Mantine tiene soporte nativo (`ColorSchemeScript`, `MantineProvider`)
-- Toggle en el header (sol/luna)
-- Preferencia guardada en `localStorage`
-- Respetar preferencia del sistema operativo (`prefers-color-scheme`)
+- [x] Mantine tiene soporte nativo (`ColorSchemeScript`, `MantineProvider`)
+- [x] Toggle en el header (sol/luna)
+- [x] Preferencia guardada en `localStorage`
+- [x] Respetar preferencia del sistema operativo (`prefers-color-scheme`)
 
-### [ ] 16. PWA (Progressive Web App)
+### [x] 16. PWA (Progressive Web App)
 
-- Instalar como app en móvil/escritorio sin tienda de apps
-- Plugin: `vite-plugin-pwa`
-- Configurar `manifest.json` con íconos y colores del branding
-- Service Worker para caché básico offline
+- [x] Instalar como app en móvil/escritorio sin tienda de apps
+- [x] Plugin: `vite-plugin-pwa`
+- [x] Configurar `manifest.json` con íconos y colores del branding
+- [x] Service Worker para caché básico offline
 
 ### [ ] 17. Notificaciones / Alertas inteligentes
 

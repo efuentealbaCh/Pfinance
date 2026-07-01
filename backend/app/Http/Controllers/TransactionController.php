@@ -91,9 +91,12 @@ class TransactionController extends Controller
 
         $this->logAction($request, $transaction, 'CREATE', null, $transaction->toArray());
 
+        $warnings = $this->checkBudgetWarning($request->user(), $transaction);
+
         return response()->json([
             'message'     => 'Transacción creada exitosamente.',
             'transaction' => $transaction,
+            'warnings'    => $warnings,
         ], 201);
     }
 
@@ -127,9 +130,12 @@ class TransactionController extends Controller
 
         $this->logAction($request, $transaction, 'UPDATE', $before, $transaction->toArray());
 
+        $warnings = $this->checkBudgetWarning($request->user(), $transaction);
+
         return response()->json([
             'message'     => 'Transacción actualizada exitosamente.',
             'transaction' => $transaction,
+            'warnings'    => $warnings,
         ]);
     }
 
@@ -195,5 +201,45 @@ class TransactionController extends Controller
         }
 
         $account->save();
+    }
+
+    /**
+     * Revisa si una transacción excede el 80% del presupuesto de la categoría en el mes actual.
+     */
+    private function checkBudgetWarning(\App\Models\User $user, Transaction $transaction): array
+    {
+        $warnings = [];
+        
+        // Solo evaluamos gastos (expense)
+        if ($transaction->type !== 'expense') {
+            return $warnings;
+        }
+
+        $currentMonth = date('Y-m');
+
+        // Buscar si la categoría tiene un presupuesto para este mes
+        $budget = \App\Models\Budget::where('user_id', $user->id)
+            ->where('category_id', $transaction->category_id)
+            ->where('period', $currentMonth)
+            ->first();
+
+        if ($budget) {
+            // Calcular el total gastado en esta categoría en el mes actual
+            $startOfMonth = date('Y-m-01');
+            $endOfMonth = date('Y-m-t');
+            
+            $spent = Transaction::where('user_id', $user->id)
+                ->where('category_id', $transaction->category_id)
+                ->where('type', 'expense')
+                ->whereBetween('date', [$startOfMonth, $endOfMonth])
+                ->sum('amount');
+            
+            if ($spent >= ($budget->amount * 0.8)) {
+                $categoryName = $transaction->category->name ?? 'la categoría';
+                $warnings[] = "¡Atención! Has alcanzado o superado el 80% de tu presupuesto de \${$budget->amount} para {$categoryName} en este mes.";
+            }
+        }
+
+        return $warnings;
     }
 }

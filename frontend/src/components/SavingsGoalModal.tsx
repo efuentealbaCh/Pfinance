@@ -12,7 +12,7 @@ import {
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useCreateSavingsGoal, useUpdateSavingsGoal } from '../api/queries';
 
 interface GoalEditData {
     id: string;
@@ -31,7 +31,9 @@ interface SavingsGoalModalProps {
 }
 
 export default function SavingsGoalModal({ opened, onClose, onSuccess, editData }: SavingsGoalModalProps) {
-    const [loading, setLoading] = useState(false);
+    const createMutation = useCreateSavingsGoal();
+    const updateMutation = useUpdateSavingsGoal();
+    const loading = createMutation.isPending || updateMutation.isPending;
 
     const form = useForm({
         initialValues: {
@@ -64,25 +66,21 @@ export default function SavingsGoalModal({ opened, onClose, onSuccess, editData 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [opened, editData]);
 
-    const handleSubmit = async (values: typeof form.values) => {
-        setLoading(true);
-        try {
-            const payload = {
-                name: values.name,
-                target_amount: values.target_amount,
-                deadline: values.deadline ? values.deadline.toISOString().split('T')[0] : null,
-                icon: values.icon || null,
-                color: values.color || null,
-            };
+    const handleSubmit = (values: typeof form.values) => {
+        const payload = {
+            name: values.name,
+            target_amount: values.target_amount,
+            deadline: values.deadline ? values.deadline.toISOString().split('T')[0] : null,
+            icon: values.icon || null,
+            color: values.color || null,
+        };
 
-            if (editData) {
-                await api.put(`/savings-goals/${editData.id}`, payload);
-            } else {
-                await api.post('/savings-goals', payload);
-            }
+        const handleSuccess = () => {
             onSuccess();
             onClose();
-        } catch (err: unknown) {
+        };
+
+        const handleError = (err: any) => {
             const axiosError = err as {
                 response?: { data?: { message?: string; errors?: Record<string, string[]> } };
             };
@@ -98,8 +96,18 @@ export default function SavingsGoalModal({ opened, onClose, onSuccess, editData 
                     color: 'red',
                 });
             }
-        } finally {
-            setLoading(false);
+        };
+
+        if (editData) {
+            updateMutation.mutate(
+                { id: editData.id, data: payload },
+                { onSuccess: handleSuccess, onError: handleError }
+            );
+        } else {
+            createMutation.mutate(
+                payload,
+                { onSuccess: handleSuccess, onError: handleError }
+            );
         }
     };
 

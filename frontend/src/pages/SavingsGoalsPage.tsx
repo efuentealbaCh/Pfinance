@@ -15,7 +15,7 @@ import {
     RingProgress,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useSavingsGoals, useDeleteSavingsGoal } from '../api/queries';
 import SavingsGoalModal from '../components/SavingsGoalModal';
 import SavingsGoalDepositModal from '../components/SavingsGoalDepositModal';
 
@@ -49,7 +49,10 @@ function getDaysRemaining(deadline: string): number {
 }
 
 export default function SavingsGoalsPage() {
-    const [goals, setGoals] = useState<GoalData[]>([]);
+    const { data: goalsResponse, isLoading, isError } = useSavingsGoals();
+    const goals = goalsResponse?.goals || [];
+    const deleteMutation = useDeleteSavingsGoal();
+
     const [modalOpened, setModalOpened] = useState(false);
     const [editGoal, setEditGoal] = useState<{
         id: string;
@@ -73,22 +76,15 @@ export default function SavingsGoalsPage() {
         targetAmount: 0,
     });
 
-    const fetchGoals = useCallback(async () => {
-        try {
-            const res = await api.get('/savings-goals');
-            setGoals(res.data.goals);
-        } catch {
+    useEffect(() => {
+        if (isError) {
             notifications.show({
                 title: 'Error',
                 message: 'No se pudieron cargar las metas de ahorro.',
                 color: 'red',
             });
         }
-    }, []);
-
-    useEffect(() => {
-        fetchGoals();
-    }, [fetchGoals]);
+    }, [isError]);
 
     const handleEdit = (goal: GoalData) => {
         setEditGoal({
@@ -112,23 +108,25 @@ export default function SavingsGoalsPage() {
         });
     };
 
-    const handleDelete = async (goal: GoalData) => {
+    const handleDelete = (goal: GoalData) => {
         if (!window.confirm(`¿Eliminar la meta "${goal.name}"?`)) return;
-        try {
-            await api.delete(`/savings-goals/${goal.id}`);
-            notifications.show({
-                title: 'Meta eliminada',
-                message: `"${goal.name}" fue eliminada.`,
-                color: 'teal',
-            });
-            fetchGoals();
-        } catch {
-            notifications.show({
-                title: 'Error',
-                message: 'No se pudo eliminar la meta.',
-                color: 'red',
-            });
-        }
+
+        deleteMutation.mutate(goal.id, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Meta eliminada',
+                    message: `"${goal.name}" fue eliminada.`,
+                    color: 'teal',
+                });
+            },
+            onError: () => {
+                notifications.show({
+                    title: 'Error',
+                    message: 'No se pudo eliminar la meta.',
+                    color: 'red',
+                });
+            }
+        });
     };
 
     const handleModalClose = () => {
@@ -144,7 +142,6 @@ export default function SavingsGoalsPage() {
                 : 'Tu nueva meta de ahorro fue creada.',
             color: 'teal',
         });
-        fetchGoals();
     };
 
     // Resumen
@@ -383,7 +380,7 @@ export default function SavingsGoalsPage() {
                 onClose={() =>
                     setDepositModal((prev) => ({ ...prev, opened: false }))
                 }
-                onSuccess={fetchGoals}
+                onSuccess={() => {}}
                 goalId={depositModal.goalId}
                 goalName={depositModal.goalName}
                 currentAmount={depositModal.currentAmount}

@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Database\Seeders\BankSeeder;
 use Database\Seeders\AccountTypeSeeder;
+use Database\Seeders\CategorySeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BankSeeder::class,
             AccountTypeSeeder::class,
+            CategorySeeder::class,
         ]);
     }
 }

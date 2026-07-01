@@ -13,7 +13,7 @@ import {
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
-import api from '../api/axios';
+import { useCreateTransaction, useUpdateTransaction, useCatalogs } from '../api/queries';
 
 interface Category {
     id: string;
@@ -63,10 +63,14 @@ export default function TransactionModal({
     onSuccess,
     editData,
 }: TransactionModalProps) {
-    const [accounts, setAccounts] = useState<UserAccount[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(false);
+    const { data: catalogs } = useCatalogs();
+    const categories = catalogs?.categories || [];
+    const accounts = catalogs?.userAccounts || [];
     const [error, setError] = useState('');
+
+    const createMutation = useCreateTransaction();
+    const updateMutation = useUpdateTransaction();
+    const loading = createMutation.isPending || updateMutation.isPending;
 
     const form = useForm<TransactionFormData>({
         initialValues: {
@@ -86,25 +90,6 @@ export default function TransactionModal({
         },
     });
 
-    // Cargar catálogos al abrir el modal
-    useEffect(() => {
-        if (opened) {
-            const fetchCatalogs = async () => {
-                try {
-                    const [accountsRes, categoriesRes] = await Promise.all([
-                        api.get('/user-accounts'),
-                        api.get('/categories'),
-                    ]);
-                    setAccounts(accountsRes.data.accounts);
-                    setCategories(categoriesRes.data);
-                } catch {
-                    setError('Error al cargar los catálogos.');
-                }
-            };
-            fetchCatalogs();
-        }
-    }, [opened]);
-
     // Rellenar formulario si es edición
     useEffect(() => {
         if (editData) {
@@ -123,24 +108,20 @@ export default function TransactionModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editData, opened]);
 
-    const handleSubmit = async (values: TransactionFormData) => {
+    const handleSubmit = (values: TransactionFormData) => {
         setError('');
-        setLoading(true);
-        try {
-            const payload = {
-                ...values,
-                date: values.date?.toISOString().split('T')[0], // YYYY-MM-DD
-            };
+        const payload = {
+            ...values,
+            date: values.date?.toISOString().split('T')[0], // YYYY-MM-DD
+        };
 
-            if (editData) {
-                await api.put(`/transactions/${editData.id}`, payload);
-            } else {
-                await api.post('/transactions', payload);
-            }
+        const handleSuccess = () => {
             form.reset();
             onSuccess();
             onClose();
-        } catch (err: unknown) {
+        };
+
+        const handleError = (err: any) => {
             const axiosError = err as {
                 response?: { data?: { message?: string; errors?: Record<string, string[]> } };
             };
@@ -150,8 +131,18 @@ export default function TransactionModal({
             } else {
                 setError(axiosError.response?.data?.message || 'Error al guardar la transacción.');
             }
-        } finally {
-            setLoading(false);
+        };
+
+        if (editData) {
+            updateMutation.mutate(
+                { id: editData.id, data: payload },
+                { onSuccess: handleSuccess, onError: handleError }
+            );
+        } else {
+            createMutation.mutate(
+                payload,
+                { onSuccess: handleSuccess, onError: handleError }
+            );
         }
     };
 

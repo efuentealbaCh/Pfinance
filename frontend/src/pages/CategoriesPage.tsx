@@ -13,7 +13,7 @@ import {
     Stack,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useCatalogs, useDeleteCategory } from '../api/queries';
 import CategoryModal from '../components/CategoryModal';
 
 interface Category {
@@ -24,57 +24,55 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-    const [categories, setCategories] = useState<Category[]>([]);
+    const { data: catalogs, isError } = useCatalogs();
+    const categories = catalogs?.categories || [];
+    const deleteMutation = useDeleteCategory();
+
     const [modalOpened, setModalOpened] = useState(false);
     const [editCategory, setEditCategory] = useState<Category | null>(null);
 
-    const fetchCategories = useCallback(async () => {
-        try {
-            const res = await api.get('/categories');
-            setCategories(res.data);
-        } catch {
+    useEffect(() => {
+        if (isError) {
             notifications.show({
                 title: 'Error',
                 message: 'No se pudieron cargar las categorías.',
                 color: 'red',
             });
         }
-    }, []);
-
-    useEffect(() => {
-        fetchCategories();
-    }, [fetchCategories]);
+    }, [isError]);
 
     const handleEdit = (category: Category) => {
         setEditCategory(category);
         setModalOpened(true);
     };
 
-    const handleDelete = async (category: Category) => {
+    const handleDelete = (category: Category) => {
         if (!window.confirm(`¿Eliminar la categoría "${category.name}"?`)) return;
-        try {
-            await api.delete(`/categories/${category.id}`);
-            notifications.show({
-                title: 'Categoría eliminada',
-                message: `"${category.name}" fue eliminada.`,
-                color: 'teal',
-            });
-            fetchCategories();
-        } catch (err: unknown) {
-            const axiosError = err as {
-                response?: { data?: { message?: string }; status?: number };
-            };
-            notifications.show({
-                title:
-                    axiosError.response?.status === 409
-                        ? 'No se puede eliminar'
-                        : 'Error',
-                message:
-                    axiosError.response?.data?.message ||
-                    'No se pudo eliminar la categoría.',
-                color: 'red',
-            });
-        }
+        
+        deleteMutation.mutate(category.id, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Categoría eliminada',
+                    message: `"${category.name}" fue eliminada.`,
+                    color: 'teal',
+                });
+            },
+            onError: (err: any) => {
+                const axiosError = err as {
+                    response?: { data?: { message?: string }; status?: number };
+                };
+                notifications.show({
+                    title:
+                        axiosError.response?.status === 409
+                            ? 'No se puede eliminar'
+                            : 'Error',
+                    message:
+                        axiosError.response?.data?.message ||
+                        'No se pudo eliminar la categoría.',
+                    color: 'red',
+                });
+            }
+        });
     };
 
     const handleModalClose = () => {
@@ -90,7 +88,6 @@ export default function CategoriesPage() {
                 : 'La nueva categoría fue registrada.',
             color: 'teal',
         });
-        fetchCategories();
     };
 
     return (

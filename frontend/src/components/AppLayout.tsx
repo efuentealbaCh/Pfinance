@@ -10,6 +10,8 @@ import {
   Burger,
   Divider,
   Tooltip,
+  ActionIcon,
+  useMantineColorScheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +30,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const [opened, { toggle, close }] = useDisclosure();
   const [loggingOut, setLoggingOut] = useState(false);
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -46,16 +49,16 @@ export default function AppLayout() {
       padding="md"
       styles={{
         main: {
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          background: 'light-dark(#f8f9fa, linear-gradient(135deg, #0f172a 0%, #1e293b 100%))',
           minHeight: '100vh',
         },
         header: {
-          backgroundColor: '#0f172a',
-          borderBottom: '1px solid #1e293b',
+          backgroundColor: 'light-dark(#ffffff, #0f172a)',
+          borderBottom: '1px solid light-dark(#e9ecef, #1e293b)',
         },
         navbar: {
-          backgroundColor: '#0f172a',
-          borderRight: '1px solid #1e293b',
+          backgroundColor: 'light-dark(#ffffff, #0f172a)',
+          borderRight: '1px solid light-dark(#e9ecef, #1e293b)',
         },
       }}
     >
@@ -63,7 +66,7 @@ export default function AppLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="white" />
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="light-dark(black, white)" />
             <Text
               size="xl"
               fw={800}
@@ -74,6 +77,15 @@ export default function AppLayout() {
             </Text>
           </Group>
           <Group gap="sm">
+            <ActionIcon
+              variant="default"
+              size="lg"
+              radius="xl"
+              onClick={toggleColorScheme}
+              title="Alternar tema oscuro"
+            >
+              {colorScheme === 'dark' ? '☀️' : '🌙'}
+            </ActionIcon>
             <Avatar color="teal" radius="xl" size="sm">
               {user?.name?.charAt(0).toUpperCase() || '?'}
             </Avatar>

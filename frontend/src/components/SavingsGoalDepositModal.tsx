@@ -8,7 +8,7 @@ import {
     SegmentedControl,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
+import { useTransactionSavingsGoal } from '../api/queries';
 
 interface SavingsGoalDepositModalProps {
     opened: boolean;
@@ -31,11 +31,12 @@ export default function SavingsGoalDepositModal({
 }: SavingsGoalDepositModalProps) {
     const [amount, setAmount] = useState<number | string>(0);
     const [action, setAction] = useState<string>('deposit');
-    const [loading, setLoading] = useState(false);
+    const transactionMutation = useTransactionSavingsGoal();
+    const loading = transactionMutation.isPending;
 
     const remaining = Math.max(0, targetAmount - currentAmount);
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         const numAmount = Number(amount);
         if (!numAmount || numAmount < 0.01) {
             notifications.show({
@@ -55,32 +56,33 @@ export default function SavingsGoalDepositModal({
             return;
         }
 
-        setLoading(true);
-        try {
-            const res = await api.post(`/savings-goals/${goalId}/${action}`, {
-                amount: numAmount,
-            });
+        if (!goalId) return;
 
-            notifications.show({
-                title: action === 'deposit' ? '💰 Abono registrado' : '📤 Retiro registrado',
-                message: res.data.message,
-                color: action === 'deposit' ? 'teal' : 'orange',
-            });
-            setAmount(0);
-            onSuccess();
-            onClose();
-        } catch (err: unknown) {
-            const axiosError = err as {
-                response?: { data?: { message?: string } };
-            };
-            notifications.show({
-                title: 'Error',
-                message: axiosError.response?.data?.message || 'No se pudo procesar la operación.',
-                color: 'red',
-            });
-        } finally {
-            setLoading(false);
-        }
+        transactionMutation.mutate(
+            { id: goalId, action, amount: numAmount },
+            {
+                onSuccess: (data) => {
+                    notifications.show({
+                        title: action === 'deposit' ? '💰 Abono registrado' : '📤 Retiro registrado',
+                        message: data.message || 'Operación exitosa',
+                        color: action === 'deposit' ? 'teal' : 'orange',
+                    });
+                    setAmount(0);
+                    onSuccess();
+                    onClose();
+                },
+                onError: (err: any) => {
+                    const axiosError = err as {
+                        response?: { data?: { message?: string } };
+                    };
+                    notifications.show({
+                        title: 'Error',
+                        message: axiosError.response?.data?.message || 'No se pudo procesar la operación.',
+                        color: 'red',
+                    });
+                }
+            }
+        );
     };
 
     return (

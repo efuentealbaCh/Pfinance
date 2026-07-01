@@ -10,7 +10,7 @@ import {
     Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import api from '../api/axios';
+import { useCreateCategory, useUpdateCategory } from '../api/queries';
 
 // Colores predefinidos para elegir rápido
 const PRESET_COLORS = [
@@ -46,8 +46,10 @@ export default function CategoryModal({
     onSuccess,
     editData,
 }: CategoryModalProps) {
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const createMutation = useCreateCategory();
+    const updateMutation = useUpdateCategory();
+    const loading = createMutation.isPending || updateMutation.isPending;
 
     const form = useForm<CategoryFormData>({
         initialValues: {
@@ -78,19 +80,16 @@ export default function CategoryModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editData, opened]);
 
-    const handleSubmit = async (values: CategoryFormData) => {
+    const handleSubmit = (values: CategoryFormData) => {
         setError('');
-        setLoading(true);
-        try {
-            if (editData) {
-                await api.put(`/categories/${editData.id}`, values);
-            } else {
-                await api.post('/categories', values);
-            }
+
+        const handleSuccess = () => {
             form.reset();
             onSuccess();
             onClose();
-        } catch (err: unknown) {
+        };
+
+        const handleError = (err: any) => {
             const axiosError = err as {
                 response?: { data?: { message?: string; errors?: Record<string, string[]> } };
             };
@@ -100,8 +99,18 @@ export default function CategoryModal({
             } else {
                 setError(axiosError.response?.data?.message || 'Error al guardar la categoría.');
             }
-        } finally {
-            setLoading(false);
+        };
+
+        if (editData) {
+            updateMutation.mutate(
+                { id: editData.id, data: values },
+                { onSuccess: handleSuccess, onError: handleError }
+            );
+        } else {
+            createMutation.mutate(
+                values,
+                { onSuccess: handleSuccess, onError: handleError }
+            );
         }
     };
 
