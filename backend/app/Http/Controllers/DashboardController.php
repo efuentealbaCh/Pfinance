@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Budget;
+use App\Models\SavingsGoal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -82,6 +85,59 @@ class DashboardController extends Controller
                 ];
             });
 
+        // 4. Progreso de presupuestos del usuario
+        $budgetProgress = $request->user()
+            ->budgets()
+            ->with('category')
+            ->get()
+            ->map(function (Budget $budget) use ($userId) {
+                [$dateFrom, $dateTo] = $this->getPeriodRange($budget->period);
+
+                $spent = (float) DB::table('transactions')
+                    ->where('user_id', $userId)
+                    ->where('category_id', $budget->category_id)
+                    ->where('type', 'expense')
+                    ->whereDate('date', '>=', $dateFrom)
+                    ->whereDate('date', '<=', $dateTo)
+                    ->sum('amount');
+
+                $percentage = $budget->amount > 0
+                    ? round(($spent / (float) $budget->amount) * 100, 1)
+                    : 0;
+
+                return [
+                    'id'            => $budget->id,
+                    'category_name' => $budget->category->name,
+                    'category_icon' => $budget->category->icon,
+                    'category_color'=> $budget->category->color ?? '#4ECDC4',
+                    'amount'        => (float) $budget->amount,
+                    'spent'         => round($spent, 2),
+                    'percentage'    => $percentage,
+                    'period'        => $budget->period,
+                    'alert'         => $percentage >= 80,
+                ];
+            });
+
+        // 5. Metas de ahorro del usuario
+        $savingsGoals = $request->user()
+            ->savingsGoals()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function (SavingsGoal $goal) {
+                return [
+                    'id'             => $goal->id,
+                    'name'           => $goal->name,
+                    'icon'           => $goal->icon,
+                    'color'          => $goal->color ?? '#4ECDC4',
+                    'target_amount'  => (float) $goal->target_amount,
+                    'current_amount' => (float) $goal->current_amount,
+                    'percentage'     => $goal->percentage,
+                    'remaining'      => $goal->remaining,
+                    'is_completed'   => $goal->is_completed,
+                    'deadline'       => $goal->deadline?->toDateString(),
+                ];
+            });
+
         return response()->json([
             'summary' => [
                 'totalIncome'  => $totalIncome,
@@ -90,6 +146,25 @@ class DashboardController extends Controller
             ],
             'expensesByCategory' => $expensesByCategory,
             'chartData'          => $chartData,
+            'budgetProgress'     => $budgetProgress,
+            'savingsGoals'       => $savingsGoals,
         ]);
     }
+
+    // ─── Helpers ─────────────────────────────────────────────
+
+    /**
+     * Obtener el rango de fechas del período actual.
+     */
+    private function getPeriodRange(string $period): array
+    {
+        $now = Carbon::now();
+
+        return match ($period) {
+            'weekly'  => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'yearly'  => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+            default   => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+        };
+    }
 }
+

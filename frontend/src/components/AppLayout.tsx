@@ -18,6 +18,8 @@ const NAV_ITEMS = [
   { label: 'Dashboard',      icon: '📊', path: '/dashboard' },
   { label: 'Transacciones',  icon: '💰', path: '/transactions' },
   { label: 'Categorías',     icon: '🏷️', path: '/categories' },
+  { label: 'Presupuestos',   icon: '📋', path: '/budgets' },
+  { label: 'Metas',          icon: '🎯', path: '/savings' },
   { label: 'Mi Perfil',      icon: '👤', path: '/profile' },
 ];
 

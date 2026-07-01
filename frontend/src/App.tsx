@@ -4,6 +4,8 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import BudgetsPage from './pages/BudgetsPage';
+import SavingsGoalsPage from './pages/SavingsGoalsPage';
 import ProfilePage from './pages/ProfilePage';
 import PrivateRoute from './components/PrivateRoute';
 import AppLayout from './components/AppLayout';
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/budgets" element={<BudgetsPage />} />
+        <Route path="/savings" element={<SavingsGoalsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   Container,
   Title,
@@ -10,12 +10,12 @@ import {
   Stack,
   Collapse,
   Divider,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import api from '../api/axios';
-import AccountModal from '../components/AccountModal';
-import AccountList from '../components/AccountList';
-import DashboardAnalytics from '../components/DashboardAnalytics';
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import api from "../api/axios";
+import AccountModal from "../components/AccountModal";
+import AccountList from "../components/AccountList";
+import DashboardAnalytics from "../components/DashboardAnalytics";
 
 interface Account {
   id: string;
@@ -37,13 +37,13 @@ export default function DashboardPage() {
 
   const fetchAccounts = useCallback(async () => {
     try {
-      const res = await api.get('/user-accounts');
+      const res = await api.get("/user-accounts");
       setAccounts(res.data.accounts);
     } catch {
       notifications.show({
-        title: 'Error',
-        message: 'No se pudieron cargar las cuentas.',
-        color: 'red',
+        title: "Error",
+        message: "No se pudieron cargar las cuentas.",
+        color: "red",
       });
     }
   }, []);
@@ -54,24 +54,24 @@ export default function DashboardPage() {
 
   const totalBalance = accounts.reduce(
     (sum, acc) => sum + Number(acc.balance),
-    0
+    0,
   );
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta cuenta?')) return;
+    if (!window.confirm("¿Estás seguro de eliminar esta cuenta?")) return;
     try {
       await api.delete(`/user-accounts/${id}`);
       notifications.show({
-        title: 'Cuenta eliminada',
-        message: 'La cuenta fue eliminada correctamente.',
-        color: 'teal',
+        title: "Cuenta eliminada",
+        message: "La cuenta fue eliminada correctamente.",
+        color: "teal",
       });
       fetchAccounts();
     } catch {
       notifications.show({
-        title: 'Error',
-        message: 'No se pudo eliminar la cuenta.',
-        color: 'red',
+        title: "Error",
+        message: "No se pudo eliminar la cuenta.",
+        color: "red",
       });
     }
   };
@@ -83,11 +83,11 @@ export default function DashboardPage() {
 
   const handleAccountSaved = () => {
     notifications.show({
-      title: editAccount ? 'Cuenta actualizada' : 'Cuenta creada',
+      title: editAccount ? "Cuenta actualizada" : "Cuenta creada",
       message: editAccount
-        ? 'Los cambios fueron guardados.'
-        : 'Tu nueva cuenta fue registrada.',
-      color: 'teal',
+        ? "Los cambios fueron guardados."
+        : "Tu nueva cuenta fue registrada.",
+      color: "teal",
     });
     fetchAccounts();
   };
@@ -106,7 +106,8 @@ export default function DashboardPage() {
               Balance total
             </Text>
             <Title order={2} c="teal">
-              ${totalBalance.toLocaleString('es-CL', {
+              $
+              {totalBalance.toLocaleString("es-CL", {
                 minimumFractionDigits: 2,
               })}
             </Title>
@@ -133,12 +134,14 @@ export default function DashboardPage() {
               ➕ Agregar cuenta
             </Button>
             <Button
-              variant={showAccounts ? 'filled' : 'outline'}
+              variant={showAccounts ? "filled" : "outline"}
               color="teal"
               radius="md"
               onClick={() => setShowAccounts(!showAccounts)}
             >
-              {showAccounts ? '🔽 Ocultar cuentas' : `📋 Ver cuentas (${accounts.length})`}
+              {showAccounts
+                ? "🔽 Ocultar cuentas"
+                : `📋 Ver cuentas (${accounts.length})`}
             </Button>
           </Group>
 
@@ -163,12 +166,12 @@ export default function DashboardPage() {
         editData={
           editAccount
             ? {
-              id: editAccount.id,
-              bank_id: editAccount.bank_id,
-              account_type_id: editAccount.account_type_id,
-              identifier: editAccount.identifier || '',
-              balance: Number(editAccount.balance),
-            }
+                id: editAccount.id,
+                bank_id: editAccount.bank_id,
+                account_type_id: editAccount.account_type_id,
+                identifier: editAccount.identifier || "",
+                balance: Number(editAccount.balance),
+              }
             : null
         }
       />

@@ -13,6 +13,7 @@ import { notifications } from '@mantine/notifications';
 import api from '../api/axios';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
+import ExportModal from '../components/ExportModal';
 
 interface Transaction {
     id: string;
@@ -62,10 +63,13 @@ export default function TransactionsPage() {
         user_account_id: '',
         date_from: null,
         date_to: null,
+        amount_min: '',
+        amount_max: '',
     });
 
     const [modalOpened, setModalOpened] = useState(false);
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
+    const [exportModalOpened, setExportModalOpened] = useState(false);
 
     // Cargar catálogos una sola vez
     useEffect(() => {
@@ -97,6 +101,8 @@ export default function TransactionsPage() {
                 if (filters.user_account_id) params.user_account_id = filters.user_account_id;
                 if (filters.date_from) params.date_from = filters.date_from.toISOString().split('T')[0];
                 if (filters.date_to) params.date_to = filters.date_to.toISOString().split('T')[0];
+                if (filters.amount_min) params.amount_min = filters.amount_min;
+                if (filters.amount_max) params.amount_max = filters.amount_max;
 
                 const res = await api.get<PaginatedResponse>('/transactions', { params });
 
@@ -189,16 +195,26 @@ export default function TransactionsPage() {
                     {/* ─── Header ─────────────────────────────────────── */}
                     <Group justify="space-between" mb="xl">
                         <Title order={3}>💰 Transacciones</Title>
-                        <Button
-                            color="teal"
-                            radius="md"
-                            onClick={() => {
-                                setEditTransaction(null);
-                                setModalOpened(true);
-                            }}
-                        >
-                            ➕ Nueva transacción
-                        </Button>
+                        <Group gap="sm">
+                            <Button
+                                variant="light"
+                                color="blue"
+                                radius="md"
+                                onClick={() => setExportModalOpened(true)}
+                            >
+                                📥 Exportar
+                            </Button>
+                            <Button
+                                color="teal"
+                                radius="md"
+                                onClick={() => {
+                                    setEditTransaction(null);
+                                    setModalOpened(true);
+                                }}
+                            >
+                                ➕ Nueva transacción
+                            </Button>
+                        </Group>
                     </Group>
 
                     <Stack gap="md">
@@ -273,6 +289,11 @@ export default function TransactionsPage() {
                         }
                         : null
                 }
+            />
+
+            <ExportModal 
+                opened={exportModalOpened}
+                onClose={() => setExportModalOpened(false)}
             />
         </>
     );

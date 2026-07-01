@@ -8,11 +8,16 @@ import {
     SimpleGrid,
     Title,
     Divider,
+    Progress,
+    Badge,
+    SegmentedControl,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import {
     AreaChart,
     Area,
+    BarChart,
+    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -50,6 +55,31 @@ interface ChartDataPoint {
     expense: number;
 }
 
+interface BudgetProgress {
+    id: string;
+    category_name: string;
+    category_icon: string | null;
+    category_color: string;
+    amount: number;
+    spent: number;
+    percentage: number;
+    period: string;
+    alert: boolean;
+}
+
+interface SavingsGoalProgress {
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string;
+    target_amount: number;
+    current_amount: number;
+    percentage: number;
+    remaining: number;
+    is_completed: boolean;
+    deadline: string | null;
+}
+
 interface DashboardAnalyticsProps {
     accounts: UserAccount[];
 }
@@ -62,10 +92,33 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
     });
     const [expensesByCategory, setExpensesByCategory] = useState<ExpenseCategory[]>([]);
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+    const [budgetProgress, setBudgetProgress] = useState<BudgetProgress[]>([]);
+    const [savingsGoals, setSavingsGoals] = useState<SavingsGoalProgress[]>([]);
+    const [alertsShown, setAlertsShown] = useState(false);
 
     const [accountId, setAccountId] = useState<string | null>(null);
     const [dateFrom, setDateFrom] = useState<Date | null>(null);
     const [dateTo, setDateTo] = useState<Date | null>(null);
+    const [period, setPeriod] = useState<string>('');
+
+    const handlePeriodChange = (val: string) => {
+        setPeriod(val);
+        const to = new Date();
+        let from = new Date();
+        if (val === '30d') {
+            from.setDate(to.getDate() - 30);
+        } else if (val === '3m') {
+            from.setMonth(to.getMonth() - 3);
+        } else if (val === '6m') {
+            from.setMonth(to.getMonth() - 6);
+        } else if (val === '1y') {
+            from.setFullYear(to.getFullYear() - 1);
+        } else {
+            return;
+        }
+        setDateFrom(from);
+        setDateTo(to);
+    };
 
     const fetchAnalytics = useCallback(async () => {
         try {
@@ -78,6 +131,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
             setSummary(res.data.summary);
             setExpensesByCategory(res.data.expensesByCategory);
             setChartData(res.data.chartData);
+            setBudgetProgress(res.data.budgetProgress || []);
+            setSavingsGoals(res.data.savingsGoals || []);
         } catch {
             notifications.show({
                 title: 'Error',
@@ -91,6 +146,24 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
         fetchAnalytics();
     }, [fetchAnalytics]);
 
+    // Mostrar alertas de presupuestos al 80%+ (solo una vez por carga)
+    useEffect(() => {
+        if (budgetProgress.length > 0 && !alertsShown) {
+            const alertBudgets = budgetProgress.filter((b) => b.alert);
+            alertBudgets.forEach((b) => {
+                notifications.show({
+                    title: b.percentage >= 100
+                        ? `⛔ Presupuesto excedido: ${b.category_name}`
+                        : `⚠️ Presupuesto al límite: ${b.category_name}`,
+                    message: `Has gastado ${formatCurrency(b.spent)} de ${formatCurrency(b.amount)} (${b.percentage}%)`,
+                    color: b.percentage >= 100 ? 'red' : 'orange',
+                    autoClose: 8000,
+                });
+            });
+            setAlertsShown(true);
+        }
+    }, [budgetProgress, alertsShown]);
+
     // Formateador para pesos chilenos
     const formatCurrency = (value: number) =>
         '$' + value.toLocaleString('es-CL');
@@ -103,27 +176,73 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                     <Text size="sm" fw={600} mb="xs">
                         {label}
                     </Text>
-                    {payload.map((entry: any, index: number) => (
-                        <Group key={index} justify="space-between" gap="xl" wrap="nowrap">
-                            <Text size="xs" c={entry.color}>
-                                {entry.name === 'income' ? 'Ingresos' : 'Egresos'}
-                            </Text>
-                            <Text size="xs" fw={700}>
-                                {formatCurrency(entry.value)}
-                            </Text>
-                        </Group>
-                    ))}
+                    {payload.map((entry: any, index: number) => {
+                        let nameLabel = entry.name;
+                        if (entry.name === 'income') nameLabel = 'Ingresos';
+                        if (entry.name === 'expense') nameLabel = 'Egresos';
+                        if (entry.name === 'balance') nameLabel = 'Saldo Acumulado';
+
+                        return (
+                            <Group key={index} justify="space-between" gap="xl" wrap="nowrap">
+                                <Text size="xs" c={entry.color}>
+                                    {nameLabel}
+                                </Text>
+                                <Text size="xs" fw={700}>
+                                    {formatCurrency(entry.value)}
+                                </Text>
+                            </Group>
+                        );
+                    })}
                 </Paper>
             );
         }
         return null;
     };
 
+    // Process cumulative balance
+    let runningBalance = 0;
+    const cumulativeChartData = chartData.map(d => {
+        const netFlow = d.income - d.expense;
+        runningBalance += netFlow;
+        return {
+            ...d,
+            balance: runningBalance
+        };
+    });
+
+    // Process monthly data for bar chart
+    const monthlyDataMap = new Map<string, { income: number; expense: number }>();
+    chartData.forEach(d => {
+        const month = d.date.substring(0, 7); // YYYY-MM
+        const existing = monthlyDataMap.get(month) || { income: 0, expense: 0 };
+        monthlyDataMap.set(month, {
+            income: existing.income + d.income,
+            expense: existing.expense + d.expense
+        });
+    });
+    const monthlyChartData = Array.from(monthlyDataMap.entries()).map(([month, data]) => ({
+        date: month,
+        income: data.income,
+        expense: data.expense
+    }));
+
     return (
         <Stack gap="xl">
             {/* ─── Filtros ───────────────────────────────────────── */}
             <Paper withBorder p="md" radius="md" bg="dark.6">
-                <Group align="flex-end" grow>
+                <Stack gap="sm">
+                    <SegmentedControl
+                        value={period}
+                        onChange={handlePeriodChange}
+                        data={[
+                            { label: 'Personalizado', value: '' },
+                            { label: 'Últimos 30 días', value: '30d' },
+                            { label: 'Últimos 3 meses', value: '3m' },
+                            { label: 'Últimos 6 meses', value: '6m' },
+                            { label: 'Último año', value: '1y' },
+                        ]}
+                    />
+                    <Group align="flex-end" grow>
                     <Select
                         label="Cuenta Bancaria"
                         placeholder="Todas las cuentas"
@@ -152,10 +271,11 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         clearable
                         valueFormat="DD/MM/YYYY"
                         value={dateTo}
-                        onChange={setDateTo}
+                        onChange={(val) => { setDateTo(val); setPeriod(''); }}
                         radius="md"
                     />
                 </Group>
+                </Stack>
             </Paper>
 
             {/* ─── Tarjetas de Resumen ───────────────────────────── */}
@@ -190,27 +310,23 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
             {/* ─── Gráficos ──────────────────────────────────────── */}
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
-                {/* Gráfico de Evolución */}
+                {/* Gráfico de Evolución del Saldo */}
                 <Paper withBorder p="md" radius="md">
                     <Title order={5} mb="lg" fw={600}>
-                        📈 Evolución en el tiempo
+                        📈 Evolución del Saldo
                     </Title>
-                    {chartData.length === 0 ? (
+                    {cumulativeChartData.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">
                             No hay datos para mostrar en este periodo.
                         </Text>
                     ) : (
                         <div style={{ height: 300, width: '100%' }}>
                             <ResponsiveContainer>
-                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <AreaChart data={cumulativeChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#12b886" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#12b886" stopOpacity={0} />
-                                        </linearGradient>
-                                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#fa5252" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#fa5252" stopOpacity={0} />
+                                        <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#4dabf7" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#4dabf7" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <XAxis
@@ -230,24 +346,52 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     />
                                     <CartesianGrid strokeDasharray="3 3" stroke="#2C2E33" vertical={false} />
                                     <RechartsTooltip content={<CustomTooltip />} />
-                                    <Legend verticalAlign="top" height={36} formatter={(value) => (value === 'income' ? 'Ingresos' : 'Egresos')} />
+                                    <Legend verticalAlign="top" height={36} formatter={() => 'Saldo Acumulado'} />
                                     <Area
                                         type="monotone"
-                                        dataKey="income"
-                                        stroke="#12b886"
+                                        dataKey="balance"
+                                        name="balance"
+                                        stroke="#4dabf7"
                                         strokeWidth={3}
                                         fillOpacity={1}
-                                        fill="url(#colorIncome)"
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="expense"
-                                        stroke="#fa5252"
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorExpense)"
+                                        fill="url(#colorBalance)"
                                     />
                                 </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </Paper>
+
+                {/* Gráfico de Barras: Ingresos vs Egresos por mes */}
+                <Paper withBorder p="md" radius="md">
+                    <Title order={5} mb="lg" fw={600}>
+                        📊 Ingresos vs Egresos por Mes
+                    </Title>
+                    {monthlyChartData.length === 0 ? (
+                        <Text c="dimmed" ta="center" py="xl">
+                            No hay datos para mostrar.
+                        </Text>
+                    ) : (
+                        <div style={{ height: 300, width: '100%' }}>
+                            <ResponsiveContainer>
+                                <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#5C5F66"
+                                        fontSize={12}
+                                        tickMargin={10}
+                                    />
+                                    <YAxis
+                                        tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                                        stroke="#5C5F66"
+                                        fontSize={12}
+                                    />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2C2E33" vertical={false} />
+                                    <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#2C2E33' }} />
+                                    <Legend verticalAlign="top" height={36} formatter={(value) => (value === 'income' ? 'Ingresos' : 'Egresos')} />
+                                    <Bar dataKey="income" name="income" fill="#12b886" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="expense" name="expense" fill="#fa5252" radius={[4, 4, 0, 0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     )}
@@ -297,6 +441,130 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                     )}
                 </Paper>
             </SimpleGrid>
+
+            {/* ─── Presupuestos ─────────────────────────────────────── */}
+            {budgetProgress.length > 0 && (
+                <>
+                    <Divider />
+                    <Paper withBorder p="md" radius="md">
+                        <Title order={5} mb="lg" fw={600}>
+                            📋 Presupuestos del Período
+                        </Title>
+                        <Stack gap="md">
+                            {budgetProgress.map((b) => {
+                                const color =
+                                    b.percentage >= 100
+                                        ? 'red'
+                                        : b.percentage >= 80
+                                          ? 'orange'
+                                          : b.percentage >= 50
+                                            ? 'yellow'
+                                            : 'teal';
+                                const periodLabel =
+                                    b.period === 'weekly'
+                                        ? 'Semanal'
+                                        : b.period === 'yearly'
+                                          ? 'Anual'
+                                          : 'Mensual';
+
+                                return (
+                                    <div key={b.id}>
+                                        <Group justify="space-between" mb={4}>
+                                            <Group gap="xs">
+                                                <Text size="lg">
+                                                    {b.category_icon || '📁'}
+                                                </Text>
+                                                <Text size="sm" fw={600}>
+                                                    {b.category_name}
+                                                </Text>
+                                                <Badge
+                                                    size="xs"
+                                                    variant="light"
+                                                    color="gray"
+                                                >
+                                                    {periodLabel}
+                                                </Badge>
+                                            </Group>
+                                            <Group gap="xs">
+                                                <Text size="xs" c="dimmed">
+                                                    {formatCurrency(b.spent)} / {formatCurrency(b.amount)}
+                                                </Text>
+                                                <Text size="sm" fw={700} c={color}>
+                                                    {b.percentage}%
+                                                </Text>
+                                                {b.percentage >= 100 && (
+                                                    <Badge color="red" variant="filled" size="xs">
+                                                        Excedido
+                                                    </Badge>
+                                                )}
+                                            </Group>
+                                        </Group>
+                                        <Progress
+                                            value={Math.min(b.percentage, 100)}
+                                            color={color}
+                                            size="md"
+                                            radius="xl"
+                                            animated={b.percentage >= 80}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </Stack>
+                    </Paper>
+                </>
+            )}
+
+            {/* ─── Metas de Ahorro ──────────────────────────────────── */}
+            {savingsGoals.length > 0 && (
+                <>
+                    <Divider />
+                    <Paper withBorder p="md" radius="md">
+                        <Title order={5} mb="lg" fw={600}>
+                            🎯 Progreso de Metas de Ahorro
+                        </Title>
+                        <Stack gap="md">
+                            {savingsGoals.map((g) => {
+                                const color = g.is_completed ? 'teal' : (g.color || '#4ECDC4');
+                                
+                                return (
+                                    <div key={g.id}>
+                                        <Group justify="space-between" mb={4}>
+                                            <Group gap="xs">
+                                                <Text size="lg">
+                                                    {g.icon || '🎯'}
+                                                </Text>
+                                                <Text size="sm" fw={600}>
+                                                    {g.name}
+                                                </Text>
+                                            </Group>
+                                            <Group gap="xs">
+                                                <Text size="xs" c="dimmed">
+                                                    {formatCurrency(g.current_amount)} / {formatCurrency(g.target_amount)}
+                                                </Text>
+                                                <Text size="sm" fw={700} c={color}>
+                                                    {g.percentage}%
+                                                </Text>
+                                                {g.is_completed && (
+                                                    <Badge color="teal" variant="filled" size="xs">
+                                                        ¡Alcanzada!
+                                                    </Badge>
+                                                )}
+                                            </Group>
+                                        </Group>
+                                        <Progress
+                                            value={Math.min(g.percentage, 100)}
+                                            color={color}
+                                            size="md"
+                                            radius="xl"
+                                            animated={!g.is_completed && g.percentage > 0}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </Stack>
+                    </Paper>
+                </>
+            )}
         </Stack>
     );
 }

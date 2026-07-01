@@ -9,6 +9,8 @@ import {
     Select,
     SegmentedControl,
     Button,
+    Collapse,
+    NumberInput,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useState } from 'react';
@@ -60,6 +62,8 @@ export interface TransactionFilters {
     user_account_id: string;
     date_from: Date | null;
     date_to: Date | null;
+    amount_min: string | number;
+    amount_max: string | number;
 }
 
 export default function TransactionList({
@@ -79,9 +83,13 @@ export default function TransactionList({
         user_account_id: '',
         date_from: null,
         date_to: null,
+        amount_min: '',
+        amount_max: '',
     });
 
-    const updateFilter = (key: keyof TransactionFilters, value: string | Date | null) => {
+    const [filtersOpened, setFiltersOpened] = useState(false);
+
+    const updateFilter = (key: keyof TransactionFilters, value: string | number | Date | null) => {
         const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
         onFilterChange(newFilters);
@@ -91,80 +99,111 @@ export default function TransactionList({
         <Stack gap="md">
             {/* ─── Filtros ─────────────────────────────────────── */}
             <Paper withBorder p="md" radius="md" bg="dark.6">
-                <Text size="sm" fw={600} mb="sm">
-                    🔍 Filtros
-                </Text>
-                <Stack gap="sm">
-                    <Group grow>
-                        <div>
-                            <Text size="xs" c="dimmed" mb={4}>
-                                Tipo
-                            </Text>
-                            <SegmentedControl
-                                fullWidth
+                <Group justify="space-between" mb={filtersOpened ? 'sm' : 0}>
+                    <Text size="sm" fw={600}>
+                        🔍 Filtros
+                    </Text>
+                    <Button variant="subtle" size="xs" onClick={() => setFiltersOpened((o) => !o)}>
+                        {filtersOpened ? 'Ocultar' : 'Mostrar'}
+                    </Button>
+                </Group>
+                
+                <Collapse in={filtersOpened}>
+                    <Stack gap="sm">
+                        <Group grow>
+                            <div>
+                                <Text size="xs" c="dimmed" mb={4}>
+                                    Tipo
+                                </Text>
+                                <SegmentedControl
+                                    fullWidth
+                                    size="xs"
+                                    data={[
+                                        { label: 'Todos', value: '' },
+                                        { label: '📉 Gastos', value: 'expense' },
+                                        { label: '📈 Ingresos', value: 'income' },
+                                    ]}
+                                    value={filters.type}
+                                    onChange={(value) => updateFilter('type', value)}
+                                    radius="md"
+                                />
+                            </div>
+                        </Group>
+
+                        <Group grow>
+                            <Select
                                 size="xs"
-                                data={[
-                                    { label: 'Todos', value: '' },
-                                    { label: '📉 Gastos', value: 'expense' },
-                                    { label: '📈 Ingresos', value: 'income' },
-                                ]}
-                                value={filters.type}
-                                onChange={(value) => updateFilter('type', value)}
+                                placeholder="Todas las categorías"
+                                clearable
+                                searchable
+                                data={categories.map((c) => ({
+                                    value: c.id,
+                                    label: `${c.icon || '📁'} ${c.name}`,
+                                }))}
+                                value={filters.category_id || null}
+                                onChange={(value) => updateFilter('category_id', value || '')}
                                 radius="md"
                             />
-                        </div>
-                    </Group>
+                            <Select
+                                size="xs"
+                                placeholder="Todas las cuentas"
+                                clearable
+                                searchable
+                                data={accounts.map((a) => ({
+                                    value: a.id,
+                                    label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
+                                }))}
+                                value={filters.user_account_id || null}
+                                onChange={(value) => updateFilter('user_account_id', value || '')}
+                                radius="md"
+                            />
+                        </Group>
 
-                    <Group grow>
-                        <Select
-                            size="xs"
-                            placeholder="Todas las categorías"
-                            clearable
-                            searchable
-                            data={categories.map((c) => ({
-                                value: c.id,
-                                label: `${c.icon || '📁'} ${c.name}`,
-                            }))}
-                            value={filters.category_id || null}
-                            onChange={(value) => updateFilter('category_id', value || '')}
-                            radius="md"
-                        />
-                        <Select
-                            size="xs"
-                            placeholder="Todas las cuentas"
-                            clearable
-                            searchable
-                            data={accounts.map((a) => ({
-                                value: a.id,
-                                label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
-                            }))}
-                            value={filters.user_account_id || null}
-                            onChange={(value) => updateFilter('user_account_id', value || '')}
-                            radius="md"
-                        />
-                    </Group>
+                        <Group grow>
+                            <DateInput
+                                size="xs"
+                                placeholder="Desde"
+                                clearable
+                                valueFormat="DD/MM/YYYY"
+                                value={filters.date_from}
+                                onChange={(value) => updateFilter('date_from', value)}
+                                radius="md"
+                            />
+                            <DateInput
+                                size="xs"
+                                placeholder="Hasta"
+                                clearable
+                                valueFormat="DD/MM/YYYY"
+                                value={filters.date_to}
+                                onChange={(value) => updateFilter('date_to', value)}
+                                radius="md"
+                            />
+                        </Group>
 
-                    <Group grow>
-                        <DateInput
-                            size="xs"
-                            placeholder="Desde"
-                            clearable
-                            valueFormat="DD/MM/YYYY"
-                            value={filters.date_from}
-                            onChange={(value) => updateFilter('date_from', value)}
-                            radius="md"
-                        />
-                        <DateInput
-                            size="xs"
-                            placeholder="Hasta"
-                            clearable
-                            valueFormat="DD/MM/YYYY"
-                            value={filters.date_to}
-                            onChange={(value) => updateFilter('date_to', value)}
-                            radius="md"
-                        />
-                    </Group>
-                </Stack>
+                        <Group grow>
+                            <NumberInput
+                                size="xs"
+                                placeholder="Monto mínimo"
+                                clearable
+                                hideControls
+                                value={filters.amount_min}
+                                onChange={(value) => updateFilter('amount_min', value)}
+                                radius="md"
+                                leftSection={<Text size="xs" c="dimmed">$</Text>}
+                            />
+                            <NumberInput
+                                size="xs"
+                                placeholder="Monto máximo"
+                                clearable
+                                hideControls
+                                value={filters.amount_max}
+                                onChange={(value) => updateFilter('amount_max', value)}
+                                radius="md"
+                                leftSection={<Text size="xs" c="dimmed">$</Text>}
+                            />
+                        </Group>
+                    </Stack>
+                </Collapse>
             </Paper>
 
             {/* ─── Lista de Transacciones ──────────────────────── */}

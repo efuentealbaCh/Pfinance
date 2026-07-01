@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserAccountController;
 use App\Models\AccountType;
@@ -32,8 +35,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cuentas del usuario
     Route::apiResource('user-accounts', UserAccountController::class);
 
-    // Transacciones
+    // Transacciones y Exportaciones
+    Route::get('/transactions/export', [ExportController::class, 'exportTransactions']);
     Route::apiResource('transactions', TransactionController::class);
+
+    // Presupuestos
+    Route::apiResource('budgets', BudgetController::class);
+
+    // Metas de Ahorro
+    Route::apiResource('savings-goals', SavingsGoalController::class);
+    Route::post('/savings-goals/{savings_goal}/deposit',  [SavingsGoalController::class, 'deposit']);
+    Route::post('/savings-goals/{savings_goal}/withdraw', [SavingsGoalController::class, 'withdraw']);
 
     // Dashboard Analíticas
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);

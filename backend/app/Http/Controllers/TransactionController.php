@@ -42,6 +42,14 @@ class TransactionController extends Controller
             $query->whereDate('date', '<=', $request->input('date_to'));
         }
 
+        if ($request->filled('amount_min')) {
+            $query->where('amount', '>=', $request->input('amount_min'));
+        }
+
+        if ($request->filled('amount_max')) {
+            $query->where('amount', '<=', $request->input('amount_max'));
+        }
+
         $transactions = $query->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
