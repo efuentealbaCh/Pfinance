@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Stack,
   Tooltip,
+  Avatar,
 } from '@mantine/core';
 
 interface Account {
@@ -14,11 +15,11 @@ interface Account {
   balance: string;
   bank_id: string;
   account_type_id: string;
-  bank: { id: string; name: string };
+  bank: { id: string; name: string; logo?: string | null };
   account_type: { id: string; name: string };
 }
 
-interface AccountListProps {
+export interface AccountListProps {
   accounts: Account[];
   onEdit: (account: Account) => void;
   onDelete: (id: string) => void;
@@ -57,6 +58,13 @@ export default function AccountList({ accounts, onEdit, onDelete }: AccountListP
           <Group justify="space-between" wrap="nowrap">
             <div style={{ flex: 1, minWidth: 0 }}>
               <Group gap="xs" mb={4}>
+                {account.bank.logo ? (
+                  <Avatar src={account.bank.logo} size="sm" radius="xl" alt={account.bank.name} />
+                ) : (
+                  <Avatar size="sm" radius="xl" color="teal">
+                    {account.bank.name.charAt(0)}
+                  </Avatar>
+                )}
                 <Text fw={600} size="sm" truncate>
                   {account.bank.name}
                 </Text>

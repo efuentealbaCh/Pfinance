@@ -7,6 +7,8 @@ import CategoriesPage from './pages/CategoriesPage';
 import BudgetsPage from './pages/BudgetsPage';
 import SavingsGoalsPage from './pages/SavingsGoalsPage';
 import ProfilePage from './pages/ProfilePage';
+import GroupsList from './pages/GroupsList';
+import GroupDetail from './pages/GroupDetail';
 import PrivateRoute from './components/PrivateRoute';
 import AppLayout from './components/AppLayout';
 
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="/budgets" element={<BudgetsPage />} />
         <Route path="/savings" element={<SavingsGoalsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/groups" element={<GroupsList />} />
+        <Route path="/groups/:id" element={<GroupDetail />} />
       </Route>
 
       {/* Redirigir raíz a login */}

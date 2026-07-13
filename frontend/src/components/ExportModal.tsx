@@ -37,7 +37,7 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
             }
 
             // Request with responseType blob to handle file download
-            const response = await api.get(`/transactions/export?${params.toString()}`, {
+            const response = await api.get(`/export/transactions?${params.toString()}`, {
                 responseType: 'blob',
             });
 

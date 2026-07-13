@@ -11,6 +11,7 @@ import {
     Button,
     Collapse,
     NumberInput,
+    Avatar,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useState } from 'react';
@@ -22,7 +23,7 @@ interface Transaction {
     amount: string;
     description: string | null;
     date: string;
-    type: 'income' | 'expense';
+    type: 'income' | 'expense' | 'transfer';
     is_shared: boolean;
     category: { id: string; name: string; icon: string | null; color: string | null };
     user_account: {
@@ -30,6 +31,11 @@ interface Transaction {
         identifier: string | null;
         bank: { id: string; name: string };
     };
+    target_account?: {
+        id: string;
+        identifier: string | null;
+        bank: { id: string; name: string };
+    } | null;
 }
 
 interface Category {
@@ -122,6 +128,7 @@ export default function TransactionList({
                                         { label: 'Todos', value: '' },
                                         { label: '📉 Gastos', value: 'expense' },
                                         { label: '📈 Ingresos', value: 'income' },
+                                        { label: '🔄 Transferencias', value: 'transfer' },
                                     ]}
                                     value={filters.type}
                                     onChange={(value) => updateFilter('type', value)}
@@ -221,7 +228,7 @@ export default function TransactionList({
                         style={{
                             transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                             cursor: 'default',
-                            borderLeft: `3px solid ${tx.type === 'income' ? '#12b886' : '#fa5252'}`,
+                            borderLeft: `3px solid ${tx.type === 'income' ? '#12b886' : tx.type === 'expense' ? '#fa5252' : '#228be6'}`,
                         }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-2px)';
@@ -236,14 +243,14 @@ export default function TransactionList({
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <Group gap="xs" mb={4}>
                                     <Text fw={600} size="sm">
-                                        {tx.category?.icon || '📁'} {tx.category?.name}
+                                        {tx.type === 'transfer' ? '🔄 Transferencia' : (tx.category?.icon || '📁') + ' ' + (tx.category?.name || 'Sin categoría')}
                                     </Text>
                                     <Badge
                                         size="xs"
                                         variant="light"
-                                        color={tx.type === 'income' ? 'teal' : 'red'}
+                                        color={tx.type === 'income' ? 'teal' : tx.type === 'expense' ? 'red' : 'blue'}
                                     >
-                                        {tx.type === 'income' ? 'Ingreso' : 'Gasto'}
+                                        {tx.type === 'income' ? 'Ingreso' : tx.type === 'expense' ? 'Gasto' : 'Transferencia'}
                                     </Badge>
                                     {tx.is_shared && (
                                         <Badge size="xs" variant="dot" color="blue">
@@ -252,10 +259,26 @@ export default function TransactionList({
                                     )}
                                 </Group>
                                 <Group gap="xs">
-                                    <Text c="dimmed" size="xs">
-                                        {tx.user_account?.bank?.name}
-                                        {tx.user_account?.identifier ? ` — ${tx.user_account.identifier}` : ''}
-                                    </Text>
+                                        {tx.type === 'transfer' ? (
+                                        <Group gap="xs">
+                                            {tx.user_account?.bank?.logo ? (
+                                                <Avatar src={tx.user_account.bank.logo} size="xs" radius="xl" alt={tx.user_account.bank.name} />
+                                            ) : null}
+                                            <Text c="dimmed" size="xs">
+                                                Desde: {tx.user_account?.bank?.name} {tx.user_account?.identifier} ➔ Hacia: {tx.target_account?.bank?.name} {tx.target_account?.identifier}
+                                            </Text>
+                                        </Group>
+                                    ) : (
+                                        <Group gap="xs">
+                                            {tx.user_account?.bank?.logo ? (
+                                                <Avatar src={tx.user_account.bank.logo} size="xs" radius="xl" alt={tx.user_account.bank.name} />
+                                            ) : null}
+                                            <Text c="dimmed" size="xs">
+                                                {tx.user_account?.bank?.name}
+                                                {tx.user_account?.identifier ? ` — ${tx.user_account.identifier}` : ''}
+                                            </Text>
+                                        </Group>
+                                    )}
                                     <Text c="dimmed" size="xs">
                                         •
                                     </Text>
@@ -274,10 +297,10 @@ export default function TransactionList({
                                 <Text
                                     fw={700}
                                     size="lg"
-                                    c={tx.type === 'income' ? 'teal' : 'red'}
+                                    c={tx.type === 'income' ? 'teal' : tx.type === 'expense' ? 'red' : 'blue'}
                                     style={{ whiteSpace: 'nowrap' }}
                                 >
-                                    {tx.type === 'income' ? '+' : '-'}$
+                                    {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}$
                                     {Number(tx.amount).toLocaleString('es-CL', {
                                         minimumFractionDigits: 2,
                                     })}

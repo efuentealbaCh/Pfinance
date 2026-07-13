@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUser = async () => {
       if (token) {
         try {
-          const response = await api.get('/me');
+          const response = await api.get('/auth/me');
           setUser(response.data.user);
         } catch {
           // Token inválido o expirado
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post('/login', { email, password });
+    const response = await api.post('/auth/login', { email, password });
     const { token: newToken, user: userData } = response.data;
     localStorage.setItem('auth_token', newToken);
     setToken(newToken);
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     passwordConfirmation: string
   ) => {
-    const response = await api.post('/register', {
+    const response = await api.post('/auth/register', {
       name,
       email,
       password,
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/logout');
+      await api.post('/auth/logout');
     } catch {
       // Ignorar error si el token ya expiró
     }

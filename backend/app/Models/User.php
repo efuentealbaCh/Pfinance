@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, HasPushSubscriptions;
 
     /**
      * The attributes that are mass assignable.
@@ -73,5 +74,17 @@ class User extends Authenticatable
     public function savingsGoals(): HasMany
     {
         return $this->hasMany(SavingsGoal::class);
+    }
+
+    public function groups(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Group::class)
+                    ->withPivot('status', 'role')
+                    ->withTimestamps();
+    }
+
+    public function sharedDebtSplits(): HasMany
+    {
+        return $this->hasMany(SharedDebtSplit::class);
     }
 }

@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      workbox: {
+        importScripts: ['/push-sw.js']
+      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'push-sw.js'],
       manifest: {
         name: 'Pfinance',
         short_name: 'Pfinance',
@@ -46,7 +49,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://nginx',
+        target: 'http://backend-js:3000',
         changeOrigin: true,
       },
     },

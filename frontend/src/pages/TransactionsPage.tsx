@@ -22,7 +22,7 @@ interface Transaction {
     amount: string;
     description: string | null;
     date: string;
-    type: 'income' | 'expense';
+    type: 'income' | 'expense' | 'transfer';
     is_shared: boolean;
     category: { id: string; name: string; icon: string | null; color: string | null };
     user_account: {
@@ -30,6 +30,12 @@ interface Transaction {
         identifier: string | null;
         bank: { id: string; name: string };
     };
+    target_account?: {
+        id: string;
+        identifier: string | null;
+        bank: { id: string; name: string };
+    } | null;
+    target_account_id?: string | null;
 }
 
 interface Category {
@@ -256,7 +262,8 @@ export default function TransactionsPage() {
                         ? {
                             id: editTransaction.id,
                             user_account_id: editTransaction.user_account_id,
-                            category_id: editTransaction.category_id,
+                            target_account_id: editTransaction.target_account_id || null,
+                            category_id: editTransaction.category_id || null,
                             type: editTransaction.type,
                             amount: Number(editTransaction.amount),
                             date: editTransaction.date,

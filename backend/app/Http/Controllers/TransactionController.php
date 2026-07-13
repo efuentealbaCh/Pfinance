@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\WebPushNotification;
 
 use App\Http\Requests\TransactionRequest;
 use App\Models\Transaction;
@@ -92,6 +93,26 @@ class TransactionController extends Controller
         $this->logAction($request, $transaction, 'CREATE', null, $transaction->toArray());
 
         $warnings = $this->checkBudgetWarning($request->user(), $transaction);
+
+        // Disparar Web Push para Warnings
+        foreach ($warnings as $warning) {
+            $request->user()->notify(new WebPushNotification(
+                'Alerta de Presupuesto ⚠️',
+                $warning,
+                null,
+                '/budgets'
+            ));
+        }
+
+        // Disparar Web Push para Transacción Grande (ej. > 1000 y tipo gasto)
+        if ($transaction->type === 'expense' && $transaction->amount > 1000) {
+            $request->user()->notify(new WebPushNotification(
+                'Transacción Grande Detectada 💸',
+                "Se ha registrado un gasto de $" . number_format($transaction->amount, 2) . " en la categoría " . ($transaction->category->name ?? 'N/A'),
+                null,
+                '/transactions'
+            ));
+        }
 
         return response()->json([
             'message'     => 'Transacción creada exitosamente.',

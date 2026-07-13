@@ -8,6 +8,10 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserAccountController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupInvitationController;
+use App\Http\Controllers\SharedDebtController;
 use App\Models\AccountType;
 use App\Models\Bank;
 use App\Models\Category;
@@ -17,6 +21,7 @@ use Illuminate\Support\Facades\Cache;
 // ─── Rutas Públicas ──────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::get('/vapid-public-key', fn() => response()->json(['key' => config('webpush.vapid.public_key')]));
 
 // ─── Rutas Protegidas (requieren token) ──────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -25,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::put('/profile',          [AuthController::class, 'updateProfile']);
     Route::put('/profile/password', [AuthController::class, 'changePassword']);
+    Route::post('/push-subscribe',  [PushSubscriptionController::class, 'update']);
 
     // Catálogos de solo lectura (Caché infinito porque rara vez cambian)
     Route::get('/banks', fn() => response()->json(Cache::rememberForever('banks', fn() => Bank::all())));
@@ -50,4 +56,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard Analíticas
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+    // Grupos y Deudas Compartidas
+    Route::apiResource('groups', GroupController::class)->only(['index', 'store', 'show']);
+    
+    // Invitaciones
+    Route::get('/groups/invitations/pending', [GroupInvitationController::class, 'pending']);
+    Route::post('/groups/{group}/invite', [GroupInvitationController::class, 'invite']);
+    Route::post('/groups/{groupId}/accept', [GroupInvitationController::class, 'accept']);
+    Route::post('/groups/{groupId}/reject', [GroupInvitationController::class, 'reject']);
+    Route::delete('/groups/{groupId}/members/{userId}', [GroupController::class, 'removeMember']);
+
+    // Deudas compartidas
+    Route::post('/groups/{groupId}/debts', [SharedDebtController::class, 'store']);
+    Route::put('/debts/{debt}/pay', [SharedDebtController::class, 'pay']);
 });

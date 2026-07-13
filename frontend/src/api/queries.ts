@@ -18,6 +18,142 @@ export interface PaginatedTransactions {
   total: number;
 }
 
+// ─── WEB PUSH ────────────────────────────────────────────────
+export const getVapidPublicKey = async () => {
+  const response = await api.get('/vapid-public-key');
+  return response.data.key;
+};
+
+export const usePushSubscribe = () => {
+  return useMutation({
+    mutationFn: async (subscriptionData: any) => {
+      const response = await api.post('/push-subscribe', subscriptionData);
+      return response.data;
+    },
+  });
+};
+
+// ─── GROUPS AND SHARED DEBTS ──────────────────────────────────
+export const useGroups = () => {
+  return useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const response = await api.get('/groups');
+      return response.data;
+    },
+  });
+};
+
+export const useGroup = (id: string) => {
+  return useQuery({
+    queryKey: ['groups', id],
+    queryFn: async () => {
+      const response = await api.get(`/groups/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useCreateGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await api.post('/groups', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+};
+
+export const useInviteUser = () => {
+  return useMutation({
+    mutationFn: async ({ groupId, email }: { groupId: string; email: string }) => {
+      const response = await api.post(`/groups/${groupId}/invite`, { email });
+      return response.data;
+    },
+  });
+};
+
+export const usePendingInvitations = () => {
+  return useQuery({
+    queryKey: ['groups', 'invitations', 'pending'],
+    queryFn: async () => {
+      const response = await api.get('/groups/invitations/pending');
+      return response.data;
+    },
+  });
+};
+
+export const useAcceptInvite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await api.post(`/groups/${groupId}/accept`);
+      return response.data;
+    },
+    onSuccess: (_, groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groups', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups', 'invitations', 'pending'] });
+    },
+  });
+};
+
+export const useRejectInvite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await api.post(`/groups/${groupId}/reject`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups', 'invitations', 'pending'] });
+    },
+  });
+};
+
+export const useRemoveMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: string; userId: string }) => {
+      const response = await api.delete(`/groups/${groupId}/members/${userId}`);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId] });
+    },
+  });
+};
+
+export const useCreateSharedDebt = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, data }: { groupId: string; data: any }) => {
+      const response = await api.post(`/groups/${groupId}/debts`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId] });
+    },
+  });
+};
+
+export const usePaySharedDebt = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ debtId, groupId }: { debtId: string; groupId: string }) => {
+      const response = await api.put(`/debts/${debtId}/pay`);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId] });
+    },
+  });
+};
+
 // ─── DASHBOARD ─────────────────────────────────────────────
 export const useDashboardSummary = (filters?: Record<string, any>) => {
   return useQuery<SummaryData>({
@@ -262,7 +398,7 @@ export const useCreateSavingsGoal = () => {
 export const useUpdateProfile = () => {
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await api.put('/profile', data);
+      const response = await api.put('/auth/profile', data);
       return response.data;
     },
   });
@@ -271,7 +407,7 @@ export const useUpdateProfile = () => {
 export const useUpdatePassword = () => {
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await api.put('/profile/password', data);
+      const response = await api.put('/auth/profile/password', data);
       return response.data;
     },
   });

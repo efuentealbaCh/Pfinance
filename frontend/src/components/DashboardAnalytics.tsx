@@ -72,8 +72,14 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
     const params: Record<string, string> = {};
     if (accountId) params.user_account_id = accountId;
-    if (dateFrom) params.date_from = dateFrom.toISOString().split('T')[0];
-    if (dateTo) params.date_to = dateTo.toISOString().split('T')[0];
+    if (dateFrom) {
+        const d = new Date(dateFrom);
+        if (!isNaN(d.getTime())) params.date_from = d.toISOString().split('T')[0];
+    }
+    if (dateTo) {
+        const d = new Date(dateTo);
+        if (!isNaN(d.getTime())) params.date_to = d.toISOString().split('T')[0];
+    }
 
     const { data, isLoading, isError } = useDashboardSummary(params);
 
@@ -285,8 +291,10 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     <XAxis
                                         dataKey="date"
                                         tickFormatter={(val) => {
-                                            const [, m, d] = val.split('-');
-                                            return `${d}/${m}`;
+                                            if (typeof val !== 'string') return String(val);
+                                            const parts = val.split('-');
+                                            if (parts.length >= 3) return `${parts[2]}/${parts[1]}`;
+                                            return val;
                                         }}
                                         stroke="#5C5F66"
                                         fontSize={12}

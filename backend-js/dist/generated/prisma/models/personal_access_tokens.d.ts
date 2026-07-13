@@ -1,0 +1,574 @@
+import type * as runtime from "@prisma/client/runtime/client";
+import type * as Prisma from "../internal/prismaNamespace.js";
+export type personal_access_tokensModel = runtime.Types.Result.DefaultSelection<Prisma.$personal_access_tokensPayload>;
+export type AggregatePersonal_access_tokens = {
+    _count: Personal_access_tokensCountAggregateOutputType | null;
+    _avg: Personal_access_tokensAvgAggregateOutputType | null;
+    _sum: Personal_access_tokensSumAggregateOutputType | null;
+    _min: Personal_access_tokensMinAggregateOutputType | null;
+    _max: Personal_access_tokensMaxAggregateOutputType | null;
+};
+export type Personal_access_tokensAvgAggregateOutputType = {
+    id: number | null;
+    tokenable_id: number | null;
+};
+export type Personal_access_tokensSumAggregateOutputType = {
+    id: bigint | null;
+    tokenable_id: bigint | null;
+};
+export type Personal_access_tokensMinAggregateOutputType = {
+    id: bigint | null;
+    tokenable_type: string | null;
+    tokenable_id: bigint | null;
+    name: string | null;
+    token: string | null;
+    abilities: string | null;
+    last_used_at: Date | null;
+    expires_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+};
+export type Personal_access_tokensMaxAggregateOutputType = {
+    id: bigint | null;
+    tokenable_type: string | null;
+    tokenable_id: bigint | null;
+    name: string | null;
+    token: string | null;
+    abilities: string | null;
+    last_used_at: Date | null;
+    expires_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+};
+export type Personal_access_tokensCountAggregateOutputType = {
+    id: number;
+    tokenable_type: number;
+    tokenable_id: number;
+    name: number;
+    token: number;
+    abilities: number;
+    last_used_at: number;
+    expires_at: number;
+    created_at: number;
+    updated_at: number;
+    _all: number;
+};
+export type Personal_access_tokensAvgAggregateInputType = {
+    id?: true;
+    tokenable_id?: true;
+};
+export type Personal_access_tokensSumAggregateInputType = {
+    id?: true;
+    tokenable_id?: true;
+};
+export type Personal_access_tokensMinAggregateInputType = {
+    id?: true;
+    tokenable_type?: true;
+    tokenable_id?: true;
+    name?: true;
+    token?: true;
+    abilities?: true;
+    last_used_at?: true;
+    expires_at?: true;
+    created_at?: true;
+    updated_at?: true;
+};
+export type Personal_access_tokensMaxAggregateInputType = {
+    id?: true;
+    tokenable_type?: true;
+    tokenable_id?: true;
+    name?: true;
+    token?: true;
+    abilities?: true;
+    last_used_at?: true;
+    expires_at?: true;
+    created_at?: true;
+    updated_at?: true;
+};
+export type Personal_access_tokensCountAggregateInputType = {
+    id?: true;
+    tokenable_type?: true;
+    tokenable_id?: true;
+    name?: true;
+    token?: true;
+    abilities?: true;
+    last_used_at?: true;
+    expires_at?: true;
+    created_at?: true;
+    updated_at?: true;
+    _all?: true;
+};
+export type Personal_access_tokensAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.personal_access_tokensWhereInput;
+    orderBy?: Prisma.personal_access_tokensOrderByWithRelationInput | Prisma.personal_access_tokensOrderByWithRelationInput[];
+    cursor?: Prisma.personal_access_tokensWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    _count?: true | Personal_access_tokensCountAggregateInputType;
+    _avg?: Personal_access_tokensAvgAggregateInputType;
+    _sum?: Personal_access_tokensSumAggregateInputType;
+    _min?: Personal_access_tokensMinAggregateInputType;
+    _max?: Personal_access_tokensMaxAggregateInputType;
+};
+export type GetPersonal_access_tokensAggregateType<T extends Personal_access_tokensAggregateArgs> = {
+    [P in keyof T & keyof AggregatePersonal_access_tokens]: P extends '_count' | 'count' ? T[P] extends true ? number : Prisma.GetScalarType<T[P], AggregatePersonal_access_tokens[P]> : Prisma.GetScalarType<T[P], AggregatePersonal_access_tokens[P]>;
+};
+export type personal_access_tokensGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.personal_access_tokensWhereInput;
+    orderBy?: Prisma.personal_access_tokensOrderByWithAggregationInput | Prisma.personal_access_tokensOrderByWithAggregationInput[];
+    by: Prisma.Personal_access_tokensScalarFieldEnum[] | Prisma.Personal_access_tokensScalarFieldEnum;
+    having?: Prisma.personal_access_tokensScalarWhereWithAggregatesInput;
+    take?: number;
+    skip?: number;
+    _count?: Personal_access_tokensCountAggregateInputType | true;
+    _avg?: Personal_access_tokensAvgAggregateInputType;
+    _sum?: Personal_access_tokensSumAggregateInputType;
+    _min?: Personal_access_tokensMinAggregateInputType;
+    _max?: Personal_access_tokensMaxAggregateInputType;
+};
+export type Personal_access_tokensGroupByOutputType = {
+    id: bigint;
+    tokenable_type: string;
+    tokenable_id: bigint;
+    name: string;
+    token: string;
+    abilities: string | null;
+    last_used_at: Date | null;
+    expires_at: Date | null;
+    created_at: Date | null;
+    updated_at: Date | null;
+    _count: Personal_access_tokensCountAggregateOutputType | null;
+    _avg: Personal_access_tokensAvgAggregateOutputType | null;
+    _sum: Personal_access_tokensSumAggregateOutputType | null;
+    _min: Personal_access_tokensMinAggregateOutputType | null;
+    _max: Personal_access_tokensMaxAggregateOutputType | null;
+};
+export type GetPersonal_access_tokensGroupByPayload<T extends personal_access_tokensGroupByArgs> = Prisma.PrismaPromise<Array<Prisma.PickEnumerable<Personal_access_tokensGroupByOutputType, T['by']> & {
+    [P in ((keyof T) & (keyof Personal_access_tokensGroupByOutputType))]: P extends '_count' ? T[P] extends boolean ? number : Prisma.GetScalarType<T[P], Personal_access_tokensGroupByOutputType[P]> : Prisma.GetScalarType<T[P], Personal_access_tokensGroupByOutputType[P]>;
+}>>;
+export type personal_access_tokensWhereInput = {
+    AND?: Prisma.personal_access_tokensWhereInput | Prisma.personal_access_tokensWhereInput[];
+    OR?: Prisma.personal_access_tokensWhereInput[];
+    NOT?: Prisma.personal_access_tokensWhereInput | Prisma.personal_access_tokensWhereInput[];
+    id?: Prisma.BigIntFilter<"personal_access_tokens"> | bigint | number;
+    tokenable_type?: Prisma.StringFilter<"personal_access_tokens"> | string;
+    tokenable_id?: Prisma.BigIntFilter<"personal_access_tokens"> | bigint | number;
+    name?: Prisma.StringFilter<"personal_access_tokens"> | string;
+    token?: Prisma.StringFilter<"personal_access_tokens"> | string;
+    abilities?: Prisma.StringNullableFilter<"personal_access_tokens"> | string | null;
+    last_used_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    expires_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    created_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    updated_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+};
+export type personal_access_tokensOrderByWithRelationInput = {
+    id?: Prisma.SortOrder;
+    tokenable_type?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    token?: Prisma.SortOrder;
+    abilities?: Prisma.SortOrderInput | Prisma.SortOrder;
+    last_used_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    expires_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    created_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    updated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+};
+export type personal_access_tokensWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number;
+    token?: string;
+    AND?: Prisma.personal_access_tokensWhereInput | Prisma.personal_access_tokensWhereInput[];
+    OR?: Prisma.personal_access_tokensWhereInput[];
+    NOT?: Prisma.personal_access_tokensWhereInput | Prisma.personal_access_tokensWhereInput[];
+    tokenable_type?: Prisma.StringFilter<"personal_access_tokens"> | string;
+    tokenable_id?: Prisma.BigIntFilter<"personal_access_tokens"> | bigint | number;
+    name?: Prisma.StringFilter<"personal_access_tokens"> | string;
+    abilities?: Prisma.StringNullableFilter<"personal_access_tokens"> | string | null;
+    last_used_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    expires_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    created_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+    updated_at?: Prisma.DateTimeNullableFilter<"personal_access_tokens"> | Date | string | null;
+}, "id" | "token">;
+export type personal_access_tokensOrderByWithAggregationInput = {
+    id?: Prisma.SortOrder;
+    tokenable_type?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    token?: Prisma.SortOrder;
+    abilities?: Prisma.SortOrderInput | Prisma.SortOrder;
+    last_used_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    expires_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    created_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    updated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+    _count?: Prisma.personal_access_tokensCountOrderByAggregateInput;
+    _avg?: Prisma.personal_access_tokensAvgOrderByAggregateInput;
+    _max?: Prisma.personal_access_tokensMaxOrderByAggregateInput;
+    _min?: Prisma.personal_access_tokensMinOrderByAggregateInput;
+    _sum?: Prisma.personal_access_tokensSumOrderByAggregateInput;
+};
+export type personal_access_tokensScalarWhereWithAggregatesInput = {
+    AND?: Prisma.personal_access_tokensScalarWhereWithAggregatesInput | Prisma.personal_access_tokensScalarWhereWithAggregatesInput[];
+    OR?: Prisma.personal_access_tokensScalarWhereWithAggregatesInput[];
+    NOT?: Prisma.personal_access_tokensScalarWhereWithAggregatesInput | Prisma.personal_access_tokensScalarWhereWithAggregatesInput[];
+    id?: Prisma.BigIntWithAggregatesFilter<"personal_access_tokens"> | bigint | number;
+    tokenable_type?: Prisma.StringWithAggregatesFilter<"personal_access_tokens"> | string;
+    tokenable_id?: Prisma.BigIntWithAggregatesFilter<"personal_access_tokens"> | bigint | number;
+    name?: Prisma.StringWithAggregatesFilter<"personal_access_tokens"> | string;
+    token?: Prisma.StringWithAggregatesFilter<"personal_access_tokens"> | string;
+    abilities?: Prisma.StringNullableWithAggregatesFilter<"personal_access_tokens"> | string | null;
+    last_used_at?: Prisma.DateTimeNullableWithAggregatesFilter<"personal_access_tokens"> | Date | string | null;
+    expires_at?: Prisma.DateTimeNullableWithAggregatesFilter<"personal_access_tokens"> | Date | string | null;
+    created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"personal_access_tokens"> | Date | string | null;
+    updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"personal_access_tokens"> | Date | string | null;
+};
+export type personal_access_tokensCreateInput = {
+    id?: bigint | number;
+    tokenable_type: string;
+    tokenable_id: bigint | number;
+    name: string;
+    token: string;
+    abilities?: string | null;
+    last_used_at?: Date | string | null;
+    expires_at?: Date | string | null;
+    created_at?: Date | string | null;
+    updated_at?: Date | string | null;
+};
+export type personal_access_tokensUncheckedCreateInput = {
+    id?: bigint | number;
+    tokenable_type: string;
+    tokenable_id: bigint | number;
+    name: string;
+    token: string;
+    abilities?: string | null;
+    last_used_at?: Date | string | null;
+    expires_at?: Date | string | null;
+    created_at?: Date | string | null;
+    updated_at?: Date | string | null;
+};
+export type personal_access_tokensUpdateInput = {
+    id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    tokenable_type?: Prisma.StringFieldUpdateOperationsInput | string;
+    tokenable_id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    token?: Prisma.StringFieldUpdateOperationsInput | string;
+    abilities?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    last_used_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+};
+export type personal_access_tokensUncheckedUpdateInput = {
+    id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    tokenable_type?: Prisma.StringFieldUpdateOperationsInput | string;
+    tokenable_id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    token?: Prisma.StringFieldUpdateOperationsInput | string;
+    abilities?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    last_used_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+};
+export type personal_access_tokensCreateManyInput = {
+    id?: bigint | number;
+    tokenable_type: string;
+    tokenable_id: bigint | number;
+    name: string;
+    token: string;
+    abilities?: string | null;
+    last_used_at?: Date | string | null;
+    expires_at?: Date | string | null;
+    created_at?: Date | string | null;
+    updated_at?: Date | string | null;
+};
+export type personal_access_tokensUpdateManyMutationInput = {
+    id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    tokenable_type?: Prisma.StringFieldUpdateOperationsInput | string;
+    tokenable_id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    token?: Prisma.StringFieldUpdateOperationsInput | string;
+    abilities?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    last_used_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+};
+export type personal_access_tokensUncheckedUpdateManyInput = {
+    id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    tokenable_type?: Prisma.StringFieldUpdateOperationsInput | string;
+    tokenable_id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    token?: Prisma.StringFieldUpdateOperationsInput | string;
+    abilities?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    last_used_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+    updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+};
+export type personal_access_tokensCountOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    tokenable_type?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    token?: Prisma.SortOrder;
+    abilities?: Prisma.SortOrder;
+    last_used_at?: Prisma.SortOrder;
+    expires_at?: Prisma.SortOrder;
+    created_at?: Prisma.SortOrder;
+    updated_at?: Prisma.SortOrder;
+};
+export type personal_access_tokensAvgOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+};
+export type personal_access_tokensMaxOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    tokenable_type?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    token?: Prisma.SortOrder;
+    abilities?: Prisma.SortOrder;
+    last_used_at?: Prisma.SortOrder;
+    expires_at?: Prisma.SortOrder;
+    created_at?: Prisma.SortOrder;
+    updated_at?: Prisma.SortOrder;
+};
+export type personal_access_tokensMinOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    tokenable_type?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    token?: Prisma.SortOrder;
+    abilities?: Prisma.SortOrder;
+    last_used_at?: Prisma.SortOrder;
+    expires_at?: Prisma.SortOrder;
+    created_at?: Prisma.SortOrder;
+    updated_at?: Prisma.SortOrder;
+};
+export type personal_access_tokensSumOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    tokenable_id?: Prisma.SortOrder;
+};
+export type personal_access_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    tokenable_type?: boolean;
+    tokenable_id?: boolean;
+    name?: boolean;
+    token?: boolean;
+    abilities?: boolean;
+    last_used_at?: boolean;
+    expires_at?: boolean;
+    created_at?: boolean;
+    updated_at?: boolean;
+}, ExtArgs["result"]["personal_access_tokens"]>;
+export type personal_access_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    tokenable_type?: boolean;
+    tokenable_id?: boolean;
+    name?: boolean;
+    token?: boolean;
+    abilities?: boolean;
+    last_used_at?: boolean;
+    expires_at?: boolean;
+    created_at?: boolean;
+    updated_at?: boolean;
+}, ExtArgs["result"]["personal_access_tokens"]>;
+export type personal_access_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    tokenable_type?: boolean;
+    tokenable_id?: boolean;
+    name?: boolean;
+    token?: boolean;
+    abilities?: boolean;
+    last_used_at?: boolean;
+    expires_at?: boolean;
+    created_at?: boolean;
+    updated_at?: boolean;
+}, ExtArgs["result"]["personal_access_tokens"]>;
+export type personal_access_tokensSelectScalar = {
+    id?: boolean;
+    tokenable_type?: boolean;
+    tokenable_id?: boolean;
+    name?: boolean;
+    token?: boolean;
+    abilities?: boolean;
+    last_used_at?: boolean;
+    expires_at?: boolean;
+    created_at?: boolean;
+    updated_at?: boolean;
+};
+export type personal_access_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tokenable_type" | "tokenable_id" | "name" | "token" | "abilities" | "last_used_at" | "expires_at" | "created_at" | "updated_at", ExtArgs["result"]["personal_access_tokens"]>;
+export type $personal_access_tokensPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    name: "personal_access_tokens";
+    objects: {};
+    scalars: runtime.Types.Extensions.GetPayloadResult<{
+        id: bigint;
+        tokenable_type: string;
+        tokenable_id: bigint;
+        name: string;
+        token: string;
+        abilities: string | null;
+        last_used_at: Date | null;
+        expires_at: Date | null;
+        created_at: Date | null;
+        updated_at: Date | null;
+    }, ExtArgs["result"]["personal_access_tokens"]>;
+    composites: {};
+};
+export type personal_access_tokensGetPayload<S extends boolean | null | undefined | personal_access_tokensDefaultArgs> = runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload, S>;
+export type personal_access_tokensCountArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = Omit<personal_access_tokensFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+    select?: Personal_access_tokensCountAggregateInputType | true;
+};
+export interface personal_access_tokensDelegate<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: {
+        types: Prisma.TypeMap<ExtArgs>['model']['personal_access_tokens'];
+        meta: {
+            name: 'personal_access_tokens';
+        };
+    };
+    findUnique<T extends personal_access_tokensFindUniqueArgs>(args: Prisma.SelectSubset<T, personal_access_tokensFindUniqueArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    findUniqueOrThrow<T extends personal_access_tokensFindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, personal_access_tokensFindUniqueOrThrowArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    findFirst<T extends personal_access_tokensFindFirstArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensFindFirstArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    findFirstOrThrow<T extends personal_access_tokensFindFirstOrThrowArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensFindFirstOrThrowArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    findMany<T extends personal_access_tokensFindManyArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>;
+    create<T extends personal_access_tokensCreateArgs>(args: Prisma.SelectSubset<T, personal_access_tokensCreateArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    createMany<T extends personal_access_tokensCreateManyArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    createManyAndReturn<T extends personal_access_tokensCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>;
+    delete<T extends personal_access_tokensDeleteArgs>(args: Prisma.SelectSubset<T, personal_access_tokensDeleteArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    update<T extends personal_access_tokensUpdateArgs>(args: Prisma.SelectSubset<T, personal_access_tokensUpdateArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    deleteMany<T extends personal_access_tokensDeleteManyArgs>(args?: Prisma.SelectSubset<T, personal_access_tokensDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    updateMany<T extends personal_access_tokensUpdateManyArgs>(args: Prisma.SelectSubset<T, personal_access_tokensUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    updateManyAndReturn<T extends personal_access_tokensUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, personal_access_tokensUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>;
+    upsert<T extends personal_access_tokensUpsertArgs>(args: Prisma.SelectSubset<T, personal_access_tokensUpsertArgs<ExtArgs>>): Prisma.Prisma__personal_access_tokensClient<runtime.Types.Result.GetResult<Prisma.$personal_access_tokensPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    count<T extends personal_access_tokensCountArgs>(args?: Prisma.Subset<T, personal_access_tokensCountArgs>): Prisma.PrismaPromise<T extends runtime.Types.Utils.Record<'select', any> ? T['select'] extends true ? number : Prisma.GetScalarType<T['select'], Personal_access_tokensCountAggregateOutputType> : number>;
+    aggregate<T extends Personal_access_tokensAggregateArgs>(args: Prisma.Subset<T, Personal_access_tokensAggregateArgs>): Prisma.PrismaPromise<GetPersonal_access_tokensAggregateType<T>>;
+    groupBy<T extends personal_access_tokensGroupByArgs, HasSelectOrTake extends Prisma.Or<Prisma.Extends<'skip', Prisma.Keys<T>>, Prisma.Extends<'take', Prisma.Keys<T>>>, OrderByArg extends Prisma.True extends HasSelectOrTake ? {
+        orderBy: personal_access_tokensGroupByArgs['orderBy'];
+    } : {
+        orderBy?: personal_access_tokensGroupByArgs['orderBy'];
+    }, OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>, ByFields extends Prisma.MaybeTupleToUnion<T['by']>, ByValid extends Prisma.Has<ByFields, OrderFields>, HavingFields extends Prisma.GetHavingFields<T['having']>, HavingValid extends Prisma.Has<ByFields, HavingFields>, ByEmpty extends T['by'] extends never[] ? Prisma.True : Prisma.False, InputErrors extends ByEmpty extends Prisma.True ? `Error: "by" must not be empty.` : HavingValid extends Prisma.False ? {
+        [P in HavingFields]: P extends ByFields ? never : P extends string ? `Error: Field "${P}" used in "having" needs to be provided in "by".` : [
+            Error,
+            'Field ',
+            P,
+            ` in "having" needs to be provided in "by"`
+        ];
+    }[HavingFields] : 'take' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "take", you also need to provide "orderBy"' : 'skip' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "skip", you also need to provide "orderBy"' : ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields]>(args: Prisma.SubsetIntersection<T, personal_access_tokensGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPersonal_access_tokensGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>;
+    readonly fields: personal_access_tokensFieldRefs;
+}
+export interface Prisma__personal_access_tokensClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise";
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): runtime.Types.Utils.JsPromise<TResult1 | TResult2>;
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): runtime.Types.Utils.JsPromise<T | TResult>;
+    finally(onfinally?: (() => void) | undefined | null): runtime.Types.Utils.JsPromise<T>;
+}
+export interface personal_access_tokensFieldRefs {
+    readonly id: Prisma.FieldRef<"personal_access_tokens", 'BigInt'>;
+    readonly tokenable_type: Prisma.FieldRef<"personal_access_tokens", 'String'>;
+    readonly tokenable_id: Prisma.FieldRef<"personal_access_tokens", 'BigInt'>;
+    readonly name: Prisma.FieldRef<"personal_access_tokens", 'String'>;
+    readonly token: Prisma.FieldRef<"personal_access_tokens", 'String'>;
+    readonly abilities: Prisma.FieldRef<"personal_access_tokens", 'String'>;
+    readonly last_used_at: Prisma.FieldRef<"personal_access_tokens", 'DateTime'>;
+    readonly expires_at: Prisma.FieldRef<"personal_access_tokens", 'DateTime'>;
+    readonly created_at: Prisma.FieldRef<"personal_access_tokens", 'DateTime'>;
+    readonly updated_at: Prisma.FieldRef<"personal_access_tokens", 'DateTime'>;
+}
+export type personal_access_tokensFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where: Prisma.personal_access_tokensWhereUniqueInput;
+};
+export type personal_access_tokensFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where: Prisma.personal_access_tokensWhereUniqueInput;
+};
+export type personal_access_tokensFindFirstArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where?: Prisma.personal_access_tokensWhereInput;
+    orderBy?: Prisma.personal_access_tokensOrderByWithRelationInput | Prisma.personal_access_tokensOrderByWithRelationInput[];
+    cursor?: Prisma.personal_access_tokensWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: Prisma.Personal_access_tokensScalarFieldEnum | Prisma.Personal_access_tokensScalarFieldEnum[];
+};
+export type personal_access_tokensFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where?: Prisma.personal_access_tokensWhereInput;
+    orderBy?: Prisma.personal_access_tokensOrderByWithRelationInput | Prisma.personal_access_tokensOrderByWithRelationInput[];
+    cursor?: Prisma.personal_access_tokensWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: Prisma.Personal_access_tokensScalarFieldEnum | Prisma.Personal_access_tokensScalarFieldEnum[];
+};
+export type personal_access_tokensFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where?: Prisma.personal_access_tokensWhereInput;
+    orderBy?: Prisma.personal_access_tokensOrderByWithRelationInput | Prisma.personal_access_tokensOrderByWithRelationInput[];
+    cursor?: Prisma.personal_access_tokensWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: Prisma.Personal_access_tokensScalarFieldEnum | Prisma.Personal_access_tokensScalarFieldEnum[];
+};
+export type personal_access_tokensCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    data: Prisma.XOR<Prisma.personal_access_tokensCreateInput, Prisma.personal_access_tokensUncheckedCreateInput>;
+};
+export type personal_access_tokensCreateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    data: Prisma.personal_access_tokensCreateManyInput | Prisma.personal_access_tokensCreateManyInput[];
+    skipDuplicates?: boolean;
+};
+export type personal_access_tokensCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelectCreateManyAndReturn<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    data: Prisma.personal_access_tokensCreateManyInput | Prisma.personal_access_tokensCreateManyInput[];
+    skipDuplicates?: boolean;
+};
+export type personal_access_tokensUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    data: Prisma.XOR<Prisma.personal_access_tokensUpdateInput, Prisma.personal_access_tokensUncheckedUpdateInput>;
+    where: Prisma.personal_access_tokensWhereUniqueInput;
+};
+export type personal_access_tokensUpdateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    data: Prisma.XOR<Prisma.personal_access_tokensUpdateManyMutationInput, Prisma.personal_access_tokensUncheckedUpdateManyInput>;
+    where?: Prisma.personal_access_tokensWhereInput;
+    limit?: number;
+};
+export type personal_access_tokensUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelectUpdateManyAndReturn<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    data: Prisma.XOR<Prisma.personal_access_tokensUpdateManyMutationInput, Prisma.personal_access_tokensUncheckedUpdateManyInput>;
+    where?: Prisma.personal_access_tokensWhereInput;
+    limit?: number;
+};
+export type personal_access_tokensUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where: Prisma.personal_access_tokensWhereUniqueInput;
+    create: Prisma.XOR<Prisma.personal_access_tokensCreateInput, Prisma.personal_access_tokensUncheckedCreateInput>;
+    update: Prisma.XOR<Prisma.personal_access_tokensUpdateInput, Prisma.personal_access_tokensUncheckedUpdateInput>;
+};
+export type personal_access_tokensDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+    where: Prisma.personal_access_tokensWhereUniqueInput;
+};
+export type personal_access_tokensDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.personal_access_tokensWhereInput;
+    limit?: number;
+};
+export type personal_access_tokensDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    select?: Prisma.personal_access_tokensSelect<ExtArgs> | null;
+    omit?: Prisma.personal_access_tokensOmit<ExtArgs> | null;
+};

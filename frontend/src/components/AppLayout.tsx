@@ -15,15 +15,34 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useAuth } from '../context/AuthContext';
+import { usePushSubscribe, getVapidPublicKey } from '../api/queries';
+import { useEffect } from 'react';
 
+// ... (omitted NAV_ITEMS for brevity) ...
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: '📊', path: '/dashboard' },
   { label: 'Transacciones',  icon: '💰', path: '/transactions' },
   { label: 'Categorías',     icon: '🏷️', path: '/categories' },
   { label: 'Presupuestos',   icon: '📋', path: '/budgets' },
   { label: 'Metas',          icon: '🎯', path: '/savings' },
+  { label: 'Grupos',         icon: '👥', path: '/groups' },
   { label: 'Mi Perfil',      icon: '👤', path: '/profile' },
 ];
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -31,6 +50,34 @@ export default function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure();
   const [loggingOut, setLoggingOut] = useState(false);
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const pushSubscribeMutation = usePushSubscribe();
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window && user) {
+      navigator.serviceWorker.ready.then(async (registration) => {
+        try {
+          const subscription = await registration.pushManager.getSubscription();
+          if (!subscription) {
+            // Subscribe the user
+            const vapidPublicKey = await getVapidPublicKey();
+            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+            const newSubscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedVapidKey
+            });
+
+            pushSubscribeMutation.mutate(newSubscription);
+          } else {
+            // Ya está subscrito, actualizamos en backend por si acaso
+            pushSubscribeMutation.mutate(subscription);
+          }
+        } catch (err) {
+          console.error('Error during push subscription:', err);
+        }
+      });
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     setLoggingOut(true);

@@ -132,20 +132,20 @@
 - [x] Configurar `manifest.json` con íconos y colores del branding
 - [x] Service Worker para caché básico offline
 
-### [ ] 17. Notificaciones / Alertas inteligentes
+### [x] 17. Notificaciones / Alertas inteligentes
 
-- Mantine Notifications ya está instalado
-- Notificar cuando: presupuesto al 80%, meta de ahorro alcanzada, transacción grande registrada
-- Opcional: notificaciones push con Web Push API
+- [x] Mantine Notifications ya está instalado
+- [x] Notificar cuando: presupuesto al 80%, meta de ahorro alcanzada, transacción grande registrada
+- [x] Opcional: notificaciones push con Web Push API
 
 ---
 
 ## 🏗️ Infraestructura — Docker y DevOps
 
-### [ ] 18. PgAdmin en docker-compose
+### [x] 18. PgAdmin en docker-compose
 
-- Interfaz visual para explorar la base de datos sin instalar nada extra
-- Añadir al `docker-compose.yml`:
+- [x] Interfaz visual para explorar la base de datos sin instalar nada extra
+- [x] Añadir al `docker-compose.yml`:
   ```yaml
   pgadmin:
     image: dpage/pgadmin4
@@ -155,7 +155,7 @@
       PGADMIN_DEFAULT_EMAIL: admin@pfinance.local
       PGADMIN_DEFAULT_PASSWORD: admin
   ```
-- Acceso: http://localhost:5050
+- [x] Acceso: http://localhost:5050
 
 ### [ ] 19. Makefile
 

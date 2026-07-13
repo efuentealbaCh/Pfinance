@@ -31,6 +31,7 @@ interface UserAccount {
 
 interface TransactionFormData {
     user_account_id: string;
+    target_account_id: string;
     category_id: string;
     type: string;
     amount: number;
@@ -42,7 +43,8 @@ interface TransactionFormData {
 interface TransactionEditData {
     id: string;
     user_account_id: string;
-    category_id: string;
+    target_account_id: string | null;
+    category_id: string | null;
     type: string;
     amount: number;
     date: string;
@@ -75,6 +77,7 @@ export default function TransactionModal({
     const form = useForm<TransactionFormData>({
         initialValues: {
             user_account_id: '',
+            target_account_id: '',
             category_id: '',
             type: 'expense',
             amount: 0,
@@ -83,8 +86,17 @@ export default function TransactionModal({
             is_shared: true,
         },
         validate: {
-            user_account_id: (value) => (value ? null : 'Selecciona una cuenta'),
-            category_id: (value) => (value ? null : 'Selecciona una categoría'),
+            user_account_id: (value) => (value ? null : 'Selecciona una cuenta de origen'),
+            target_account_id: (value, values) => {
+                if (values.type !== 'transfer') return null;
+                if (!value) return 'Selecciona una cuenta de destino';
+                if (value === values.user_account_id) return 'La cuenta destino debe ser distinta';
+                return null;
+            },
+            category_id: (value, values) => {
+                if (values.type === 'transfer') return null; // Opcional para transferencias
+                return value ? null : 'Selecciona una categoría';
+            },
             amount: (value) => (value >= 0.01 ? null : 'El monto debe ser mayor a cero'),
             date: (value) => (value ? null : 'La fecha es obligatoria'),
         },
@@ -95,7 +107,8 @@ export default function TransactionModal({
         if (editData) {
             form.setValues({
                 user_account_id: editData.user_account_id,
-                category_id: editData.category_id,
+                target_account_id: editData.target_account_id || '',
+                category_id: editData.category_id || '',
                 type: editData.type,
                 amount: editData.amount,
                 date: new Date(editData.date),
@@ -112,7 +125,7 @@ export default function TransactionModal({
         setError('');
         const payload = {
             ...values,
-            date: values.date?.toISOString().split('T')[0], // YYYY-MM-DD
+            date: values.date ? new Date(values.date).toISOString().split('T')[0] : null, // YYYY-MM-DD
         };
 
         const handleSuccess = () => {
@@ -173,15 +186,16 @@ export default function TransactionModal({
                             data={[
                                 { label: '📉 Gasto', value: 'expense' },
                                 { label: '📈 Ingreso', value: 'income' },
+                                { label: '🔄 Transferencia', value: 'transfer' },
                             ]}
-                            color={form.values.type === 'income' ? 'teal' : 'red'}
+                            color={form.values.type === 'income' ? 'teal' : form.values.type === 'expense' ? 'red' : 'blue'}
                             radius="md"
                             {...form.getInputProps('type')}
                         />
                     </div>
 
                     <Select
-                        label="Cuenta"
+                        label={form.values.type === 'transfer' ? 'Cuenta de origen' : 'Cuenta'}
                         placeholder="Selecciona una cuenta"
                         data={accounts.map((a) => ({
                             value: a.id,
@@ -193,18 +207,36 @@ export default function TransactionModal({
                         {...form.getInputProps('user_account_id')}
                     />
 
-                    <Select
-                        label="Categoría"
-                        placeholder="Selecciona una categoría"
-                        data={categories.map((c) => ({
-                            value: c.id,
-                            label: `${c.icon || '📁'} ${c.name}`,
-                        }))}
-                        required
-                        searchable
-                        radius="md"
-                        {...form.getInputProps('category_id')}
-                    />
+                    {form.values.type === 'transfer' && (
+                        <Select
+                            label="Cuenta de destino"
+                            placeholder="Selecciona cuenta destino"
+                            data={accounts.map((a) => ({
+                                value: a.id,
+                                label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
+                                disabled: a.id === form.values.user_account_id
+                            }))}
+                            required
+                            searchable
+                            radius="md"
+                            {...form.getInputProps('target_account_id')}
+                        />
+                    )}
+
+                    {form.values.type !== 'transfer' && (
+                        <Select
+                            label="Categoría"
+                            placeholder="Selecciona una categoría"
+                            data={categories.map((c) => ({
+                                value: c.id,
+                                label: `${c.icon || '📁'} ${c.name}`,
+                            }))}
+                            required
+                            searchable
+                            radius="md"
+                            {...form.getInputProps('category_id')}
+                        />
+                    )}
 
                     <NumberInput
                         label="Monto"
@@ -249,7 +281,7 @@ export default function TransactionModal({
                     <Button
                         type="submit"
                         fullWidth
-                        color={form.values.type === 'income' ? 'teal' : 'red'}
+                        color={form.values.type === 'income' ? 'teal' : form.values.type === 'expense' ? 'red' : 'blue'}
                         radius="md"
                         loading={loading}
                     >
