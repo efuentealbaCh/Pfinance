@@ -21,7 +21,7 @@ let TransactionsService = class TransactionsService {
     mapTransaction(t) {
         if (!t)
             return t;
-        const { categories, user_accounts, ...rest } = t;
+        const { categories, user_accounts, target_accounts, ...rest } = t;
         let mappedUserAccount = undefined;
         if (user_accounts) {
             const { banks, ...uaRest } = user_accounts;
@@ -30,20 +30,31 @@ let TransactionsService = class TransactionsService {
                 bank: banks,
             };
         }
+        let mappedTargetAccount = undefined;
+        if (target_accounts) {
+            const { banks, ...taRest } = target_accounts;
+            mappedTargetAccount = {
+                ...taRest,
+                bank: banks,
+            };
+        }
         return {
             ...rest,
-            category: categories,
+            category: categories || null,
             user_account: mappedUserAccount,
+            target_account: mappedTargetAccount,
         };
     }
     async findAll(userId, filters) {
         const where = { user_id: userId };
         if (filters.type)
             where.type = filters.type;
-        if (filters.category_id)
-            where.category_id = filters.category_id;
-        if (filters.user_account_id)
-            where.user_account_id = filters.user_account_id;
+        if (filters.user_account_id) {
+            where.OR = [
+                { user_account_id: filters.user_account_id },
+                { target_account_id: filters.user_account_id },
+            ];
+        }
         if (filters.date_from || filters.date_to) {
             where.date = {};
             if (filters.date_from)
@@ -63,6 +74,7 @@ let TransactionsService = class TransactionsService {
             include: {
                 categories: true,
                 user_accounts: { include: { banks: true } },
+                target_accounts: { include: { banks: true } },
             },
             orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
             take: 15,
@@ -75,6 +87,7 @@ let TransactionsService = class TransactionsService {
             include: {
                 categories: true,
                 user_accounts: { include: { banks: true } },
+                target_accounts: { include: { banks: true } },
                 transaction_logs: true,
             },
         });
@@ -88,12 +101,16 @@ let TransactionsService = class TransactionsService {
         });
         if (!account)
             throw new common_1.NotFoundException('Account not found');
+        if (data.type === 'transfer' && !data.target_account_id) {
+            throw new Error('Target account is required for transfers.');
+        }
         const transaction = await this.prisma.transactions.create({
             data: {
                 id: (0, crypto_1.randomUUID)(),
                 user_id: userId,
                 user_account_id: data.user_account_id,
-                category_id: data.category_id,
+                target_account_id: data.type === 'transfer' ? data.target_account_id : null,
+                category_id: data.type === 'transfer' ? null : data.category_id,
                 amount: data.amount,
                 description: data.description,
                 date: new Date(data.date),
@@ -102,9 +119,40 @@ let TransactionsService = class TransactionsService {
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            include: { categories: true, user_accounts: { include: { banks: true } } },
+            include: {
+                categories: true,
+                user_accounts: { include: { banks: true } },
+                target_accounts: { include: { banks: true } }
+            },
         });
-        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount));
+        if (data.is_shared && data.group_id && data.type === 'expense') {
+            const groupMembers = await this.prisma.group_user.findMany({
+                where: { group_id: BigInt(data.group_id) }
+            });
+            if (groupMembers.length > 0) {
+                const splitAmount = Number(data.amount) / groupMembers.length;
+                const percentage = 100 / groupMembers.length;
+                await this.prisma.shared_debts.create({
+                    data: {
+                        group_id: BigInt(data.group_id),
+                        created_by: userId,
+                        title: data.description || 'Gasto compartido',
+                        amount: data.amount,
+                        date: new Date(data.date),
+                        transaction_id: transaction.id,
+                        shared_debt_splits: {
+                            create: groupMembers.map(member => ({
+                                user_id: member.user_id,
+                                percentage: percentage,
+                                amount_owed: splitAmount,
+                                is_paid: member.user_id === userId,
+                            }))
+                        }
+                    }
+                });
+            }
+        }
+        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), false, transaction.target_account_id);
         await this.logAction(transaction.id, userId, 'CREATE', null, transaction, reqMetadata);
         const warnings = await this.checkBudgetWarning(userId, transaction);
         return {
@@ -126,13 +174,17 @@ let TransactionsService = class TransactionsService {
             if (!account)
                 throw new common_1.NotFoundException('Account not found');
         }
+        if (data.type === 'transfer' && !data.target_account_id) {
+            throw new Error('Target account is required for transfers.');
+        }
         const before = transaction;
-        await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true);
+        await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true, before.target_account_id);
         const updatedTransaction = await this.prisma.transactions.update({
             where: { id },
             data: {
                 user_account_id: data.user_account_id,
-                category_id: data.category_id,
+                target_account_id: data.type === 'transfer' ? data.target_account_id : null,
+                category_id: data.type === 'transfer' ? null : data.category_id,
                 amount: data.amount,
                 description: data.description,
                 date: data.date ? new Date(data.date) : undefined,
@@ -140,9 +192,36 @@ let TransactionsService = class TransactionsService {
                 is_shared: data.is_shared,
                 updated_at: new Date(),
             },
-            include: { categories: true, user_accounts: { include: { banks: true } } },
+            include: {
+                categories: true,
+                user_accounts: { include: { banks: true } },
+                target_accounts: { include: { banks: true } }
+            },
         });
-        await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount));
+        if (updatedTransaction.is_shared && updatedTransaction.type === 'expense') {
+            const existingDebt = await this.prisma.shared_debts.findFirst({
+                where: { transaction_id: updatedTransaction.id }
+            });
+            if (existingDebt && (Number(existingDebt.amount) !== Number(updatedTransaction.amount) || data.date)) {
+                const groupMembers = await this.prisma.group_user.findMany({
+                    where: { group_id: existingDebt.group_id }
+                });
+                if (groupMembers.length > 0) {
+                    const splitAmount = Number(updatedTransaction.amount) / groupMembers.length;
+                    await this.prisma.shared_debts.update({
+                        where: { id: existingDebt.id },
+                        data: { amount: updatedTransaction.amount, date: data.date ? new Date(data.date) : undefined },
+                    });
+                    for (const member of groupMembers) {
+                        await this.prisma.shared_debt_splits.updateMany({
+                            where: { shared_debt_id: existingDebt.id, user_id: member.user_id },
+                            data: { amount_owed: splitAmount },
+                        });
+                    }
+                }
+            }
+        }
+        await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount), false, updatedTransaction.target_account_id);
         await this.logAction(transaction.id, userId, 'UPDATE', before, updatedTransaction, reqMetadata);
         const warnings = await this.checkBudgetWarning(userId, updatedTransaction);
         return {
@@ -158,7 +237,7 @@ let TransactionsService = class TransactionsService {
         if (!transaction)
             throw new common_1.NotFoundException('Transaction not found');
         await this.logAction(transaction.id, userId, 'DELETE', transaction, null, reqMetadata);
-        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true);
+        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true, transaction.target_account_id);
         await this.prisma.transactions.delete({ where: { id } });
         return { message: 'Transacción eliminada exitosamente.' };
     }
@@ -177,16 +256,32 @@ let TransactionsService = class TransactionsService {
             }
         });
     }
-    async adjustAccountBalance(userId, accountId, type, amount, revert = false) {
+    async adjustAccountBalance(userId, accountId, type, amount, revert = false, targetAccountId = null) {
         const account = await this.prisma.user_accounts.findFirst({ where: { id: accountId, user_id: userId } });
         if (!account)
             return;
         let balance = Number(account.balance);
         const factor = revert ? -1 : 1;
-        if (type === 'income')
+        if (type === 'income') {
             balance += (amount * factor);
-        else
+        }
+        else if (type === 'expense') {
             balance -= (amount * factor);
+        }
+        else if (type === 'transfer') {
+            balance -= (amount * factor);
+            if (targetAccountId) {
+                const targetAccount = await this.prisma.user_accounts.findFirst({ where: { id: targetAccountId, user_id: userId } });
+                if (targetAccount) {
+                    let targetBalance = Number(targetAccount.balance);
+                    targetBalance += (amount * factor);
+                    await this.prisma.user_accounts.update({
+                        where: { id: targetAccountId },
+                        data: { balance: targetBalance },
+                    });
+                }
+            }
+        }
         await this.prisma.user_accounts.update({
             where: { id: accountId },
             data: { balance },

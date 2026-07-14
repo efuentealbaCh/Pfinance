@@ -45,6 +45,7 @@ export class TransactionsService {
         { target_account_id: filters.user_account_id },
       ];
     }
+    if (filters.date_from || filters.date_to) {
       where.date = {};
       if (filters.date_from) where.date.gte = new Date(filters.date_from);
       if (filters.date_to) where.date.lte = new Date(filters.date_to);

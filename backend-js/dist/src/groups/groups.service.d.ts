@@ -16,4 +16,19 @@ export declare class GroupsService {
     removeMember(groupId: string, targetUserId: bigint, requesterId: bigint): Promise<{
         message: string;
     }>;
+    inviteUser(groupId: string, email: string, requesterId: bigint): Promise<{
+        message: string;
+    }>;
+    acceptInvitation(groupId: string, userId: bigint): Promise<{
+        message: string;
+    }>;
+    rejectInvitation(groupId: string, userId: bigint): Promise<{
+        message: string;
+    }>;
+    getInvitations(userId: bigint): Promise<{
+        id: bigint;
+        name: string;
+        description: string | null;
+        invited_at: Date | null;
+    }[]>;
 }

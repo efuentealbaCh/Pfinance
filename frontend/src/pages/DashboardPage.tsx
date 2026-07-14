@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
         <Stack gap="md">
           {/* ─── Balance Total ─────────────────────────────── */}
-          <Paper withBorder p="lg" radius="md" bg="dark.6">
+          <Paper withBorder p="lg" radius="md">
             <Text c="dimmed" size="sm" mb={4}>
               Balance total
             </Text>

@@ -10,8 +10,23 @@ export declare class GroupsController {
         description: string | null;
         created_by: bigint;
     }>;
+    getInvitations(req: any): Promise<{
+        id: bigint;
+        name: string;
+        description: string | null;
+        invited_at: Date | null;
+    }[]>;
     findAll(req: any): Promise<any[]>;
     findOne(req: any, id: string): Promise<any>;
+    invite(req: any, id: string, email: string): Promise<{
+        message: string;
+    }>;
+    accept(req: any, id: string): Promise<{
+        message: string;
+    }>;
+    reject(req: any, id: string): Promise<{
+        message: string;
+    }>;
     removeMember(req: any, id: string, userId: string): Promise<{
         message: string;
     }>;

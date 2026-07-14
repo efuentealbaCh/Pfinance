@@ -24,11 +24,23 @@ let GroupsController = class GroupsController {
     create(req, data) {
         return this.groupsService.create(req.user.id, data);
     }
+    getInvitations(req) {
+        return this.groupsService.getInvitations(req.user.id);
+    }
     findAll(req) {
         return this.groupsService.findAll(req.user.id);
     }
     findOne(req, id) {
         return this.groupsService.findOne(id, req.user.id);
+    }
+    invite(req, id, email) {
+        return this.groupsService.inviteUser(id, email, req.user.id);
+    }
+    accept(req, id) {
+        return this.groupsService.acceptInvitation(id, req.user.id);
+    }
+    reject(req, id) {
+        return this.groupsService.rejectInvitation(id, req.user.id);
     }
     removeMember(req, id, userId) {
         return this.groupsService.removeMember(id, BigInt(userId), req.user.id);
@@ -44,6 +56,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], GroupsController.prototype, "create", null);
 __decorate([
+    (0, common_1.Get)('invitations'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "getInvitations", null);
+__decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -58,6 +77,31 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], GroupsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Post)(':id/invite'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)('email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "invite", null);
+__decorate([
+    (0, common_1.Post)(':id/accept'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "accept", null);
+__decorate([
+    (0, common_1.Post)(':id/reject'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "reject", null);
 __decorate([
     (0, common_1.Delete)(':id/members/:userId'),
     __param(0, (0, common_1.Request)()),

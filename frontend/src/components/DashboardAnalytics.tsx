@@ -125,7 +125,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <Paper p="sm" withBorder shadow="md" bg="dark.7">
+                <Paper p="sm" withBorder shadow="md">
                     <Text size="sm" fw={600} mb="xs">
                         {label}
                     </Text>
@@ -182,7 +182,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
     return (
         <Stack gap="xl">
             {/* ─── Filtros ───────────────────────────────────────── */}
-            <Paper withBorder p="md" radius="md" bg="dark.6">
+            <Paper withBorder p="md" radius="md">
                 <Stack gap="sm">
                     <SegmentedControl
                         value={period}
@@ -239,7 +239,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                 <>
             {/* ─── Tarjetas de Resumen ───────────────────────────── */}
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <Paper withBorder p="xl" radius="md" bg="dark.6">
+                <Paper withBorder p="xl" radius="md">
                     <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                         ingresos Totales
                     </Text>
@@ -247,7 +247,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         {formatCurrency(summary.totalIncome)}
                     </Text>
                 </Paper>
-                <Paper withBorder p="xl" radius="md" bg="dark.6">
+                <Paper withBorder p="xl" radius="md">
                     <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                         gastos Totales
                     </Text>
@@ -255,7 +255,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         {formatCurrency(summary.totalExpense)}
                     </Text>
                 </Paper>
-                <Paper withBorder p="xl" radius="md" bg="dark.6">
+                <Paper withBorder p="xl" radius="md">
                     <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                         Balance Neto
                     </Text>

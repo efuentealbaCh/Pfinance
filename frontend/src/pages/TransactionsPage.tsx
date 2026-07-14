@@ -202,7 +202,7 @@ export default function TransactionsPage() {
                     <Stack gap="md">
                         {/* ─── Resumen ──────────────────────────────────── */}
                         <Group grow>
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" mb={2}>
                                     Ingresos
                                 </Text>
@@ -210,7 +210,7 @@ export default function TransactionsPage() {
                                     +${totalIncome.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
                                 </Text>
                             </Paper>
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" mb={2}>
                                     Gastos
                                 </Text>
@@ -218,7 +218,7 @@ export default function TransactionsPage() {
                                     -${totalExpense.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
                                 </Text>
                             </Paper>
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" mb={2}>
                                     Balance
                                 </Text>

@@ -104,7 +104,7 @@ export default function TransactionList({
     return (
         <Stack gap="md">
             {/* ─── Filtros ─────────────────────────────────────── */}
-            <Paper withBorder p="md" radius="md" bg="dark.6">
+            <Paper withBorder p="md" radius="md">
                 <Group justify="space-between" mb={filtersOpened ? 'sm' : 0}>
                     <Text size="sm" fw={600}>
                         🔍 Filtros

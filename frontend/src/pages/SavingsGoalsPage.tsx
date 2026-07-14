@@ -171,7 +171,7 @@ export default function SavingsGoalsPage() {
                     {/* ─── Resumen ─────────────────────────────────────── */}
                     {goals.length > 0 && (
                         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="xl">
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                                     Total Ahorrado
                                 </Text>
@@ -179,7 +179,7 @@ export default function SavingsGoalsPage() {
                                     {formatCurrency(totalSaved)}
                                 </Text>
                             </Paper>
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                                     Total Objetivo
                                 </Text>
@@ -187,7 +187,7 @@ export default function SavingsGoalsPage() {
                                     {formatCurrency(totalTarget)}
                                 </Text>
                             </Paper>
-                            <Paper withBorder p="md" radius="md" bg="dark.6">
+                            <Paper withBorder p="md" radius="md">
                                 <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
                                     Metas Completadas
                                 </Text>

@@ -117,6 +117,82 @@ let GroupsService = class GroupsService {
         });
         return { message: 'Miembro eliminado correctamente.' };
     }
+    async inviteUser(groupId, email, requesterId) {
+        const gId = BigInt(groupId);
+        const requesterMembership = await this.prisma.group_user.findFirst({
+            where: { group_id: gId, user_id: requesterId, role: 'admin' },
+        });
+        if (!requesterMembership)
+            throw new common_1.ForbiddenException('No tienes permisos para invitar a este grupo.');
+        const targetUser = await this.prisma.users.findUnique({ where: { email } });
+        if (!targetUser)
+            throw new common_1.NotFoundException('Usuario con ese email no encontrado.');
+        const existingMembership = await this.prisma.group_user.findFirst({
+            where: { group_id: gId, user_id: targetUser.id }
+        });
+        if (existingMembership) {
+            if (existingMembership.status === 'pending')
+                throw new Error('El usuario ya tiene una invitación pendiente.');
+            throw new Error('El usuario ya es miembro del grupo.');
+        }
+        await this.prisma.group_user.create({
+            data: {
+                group_id: gId,
+                user_id: targetUser.id,
+                role: 'member',
+                status: 'pending',
+                created_at: new Date(),
+                updated_at: new Date(),
+            }
+        });
+        return { message: 'Invitación enviada.' };
+    }
+    async acceptInvitation(groupId, userId) {
+        const gId = BigInt(groupId);
+        const membership = await this.prisma.group_user.findFirst({
+            where: { group_id: gId, user_id: userId, status: 'pending' },
+        });
+        if (!membership)
+            throw new common_1.NotFoundException('Invitación no encontrada.');
+        await this.prisma.group_user.update({
+            where: { id: membership.id },
+            data: { status: 'accepted', updated_at: new Date() },
+        });
+        return { message: 'Invitación aceptada.' };
+    }
+    async rejectInvitation(groupId, userId) {
+        const gId = BigInt(groupId);
+        const membership = await this.prisma.group_user.findFirst({
+            where: { group_id: gId, user_id: userId, status: 'pending' },
+        });
+        if (!membership)
+            throw new common_1.NotFoundException('Invitación no encontrada.');
+        await this.prisma.group_user.delete({
+            where: { id: membership.id },
+        });
+        return { message: 'Invitación rechazada.' };
+    }
+    async getInvitations(userId) {
+        const invitations = await this.prisma.group_user.findMany({
+            where: { user_id: userId, status: 'pending' },
+            include: {
+                groups: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        created_at: true,
+                    }
+                }
+            }
+        });
+        return invitations.map(inv => ({
+            id: inv.groups.id,
+            name: inv.groups.name,
+            description: inv.groups.description,
+            invited_at: inv.created_at,
+        }));
+    }
 };
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([

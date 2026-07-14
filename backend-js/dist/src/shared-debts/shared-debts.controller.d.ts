@@ -17,9 +17,10 @@ export declare class SharedDebtsController {
         updated_at: Date | null;
         amount: import("@prisma/client/runtime/library").Decimal;
         date: Date;
-        created_by: bigint;
         group_id: bigint;
         title: string;
+        created_by: bigint;
+        transaction_id: string | null;
     } | null>;
     pay(req: any, debtId: string): Promise<{
         message: string;
@@ -28,10 +29,10 @@ export declare class SharedDebtsController {
             created_at: Date | null;
             updated_at: Date | null;
             user_id: bigint;
-            shared_debt_id: bigint;
             percentage: import("@prisma/client/runtime/library").Decimal;
             amount_owed: import("@prisma/client/runtime/library").Decimal;
             is_paid: boolean;
+            shared_debt_id: bigint;
         };
     }>;
 }

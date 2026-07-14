@@ -68,7 +68,7 @@ let DashboardService = class DashboardService {
             const current = chartMap.get(d);
             if (t.type === 'income')
                 current.income += Number(t.amount);
-            else
+            else if (t.type === 'expense')
                 current.expense += Number(t.amount);
         }
         const chartData = Array.from(chartMap.entries()).map(([date, data]) => ({
