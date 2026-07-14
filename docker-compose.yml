@@ -1,0 +1,95 @@
+services:
+  # ─── Base de Datos PostgreSQL ───────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: pfinance_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pfinance
+      POSTGRES_USER: pfinance_user
+      POSTGRES_PASSWORD: pfinance_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pfinance_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pfinance_user -d pfinance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Laravel (PHP 8.3 FPM) ──────────────────────────
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: pfinance_backend
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./backend:/app
+  #   environment:
+  #     APP_NAME: Pfinance
+  #     APP_ENV: local
+  #     APP_DEBUG: "true"
+  #     APP_URL: http://localhost:8000
+  #     DB_CONNECTION: pgsql
+  #     DB_HOST: db
+  #     DB_PORT: 5432
+  #     DB_DATABASE: pfinance
+  #     DB_USERNAME: pfinance_user
+  #     DB_PASSWORD: pfinance_secret
+  #     SESSION_DRIVER: database
+  #     CACHE_STORE: database
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+  # ─── Nginx (Proxy Reverso para Laravel) ───────────────────
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: pfinance_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:80"
+  #   volumes:
+  #     - ./backend:/app
+  #     - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - backend
+
+  # ─── Nuevo Backend (NestJS) ───────────────────────────────
+  backend-js:
+    build:
+      context: ./backend-js
+      dockerfile: Dockerfile
+    container_name: pfinance_backend_js
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend-js:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://pfinance_user:pfinance_secret@db:5432/pfinance?schema=public
+    command: npm run start:dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── Frontend React + TypeScript (Vite) ─────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pfinance_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+    # depends_on:
+    #   - nginx
+volumes:
+  pfinance_db_data:
