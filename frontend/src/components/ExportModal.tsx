@@ -123,7 +123,7 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
                         clearable
                         valueFormat="DD/MM/YYYY"
                         value={dateFrom}
-                        onChange={setDateFrom}
+                        onChange={(val: any) => setDateFrom(val)}
                         maxDate={dateTo || undefined}
                         radius="md"
                     />
@@ -133,7 +133,7 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
                         clearable
                         valueFormat="DD/MM/YYYY"
                         value={dateTo}
-                        onChange={setDateTo}
+                        onChange={(val: any) => setDateTo(val)}
                         minDate={dateFrom || undefined}
                         maxDate={new Date()}
                         radius="md"

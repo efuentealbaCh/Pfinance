@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
     Modal,
     TextInput,
@@ -44,8 +44,8 @@ export default function SavingsGoalModal({ opened, onClose, onSuccess, editData 
             color: '#4ECDC4',
         },
         validate: {
-            name: (v) => (!v.trim() ? 'El nombre es obligatorio' : null),
-            target_amount: (v) => (v < 1 ? 'El monto debe ser al menos $1' : null),
+            name: (v: string) => (!v.trim() ? 'El nombre es obligatorio' : null),
+            target_amount: (v: number) => (v < 1 ? 'El monto debe ser al menos $1' : null),
         },
     });
 

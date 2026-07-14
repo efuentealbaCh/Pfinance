@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Modal, TextInput, NumberInput, Button, Stack, Table, Slider, Text, Group } from '@mantine/core';
+import { useEffect } from 'react';
+import { Modal, TextInput, NumberInput, Button, Stack, Table, Text, Group } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { DatePickerInput } from '@mantine/dates';
 import { useCreateSharedDebt } from '../api/queries';
@@ -23,9 +23,9 @@ export default function AddSharedDebtModal({ opened, close, groupId, members }: 
       splits: members.map(m => ({ user_id: m.id, percentage: (100 / members.length) })),
     },
     validate: {
-      title: (v) => (!v ? 'Requerido' : null),
-      amount: (v) => (v <= 0 ? 'Monto debe ser mayor a 0' : null),
-      date: (v) => (!v ? 'Requerido' : null),
+      title: (v: string) => (!v ? 'Requerido' : null),
+      amount: (v: number) => (v <= 0 ? 'Monto debe ser mayor a 0' : null),
+      date: (v: Date | null) => (!v ? 'Requerido' : null),
     }
   });
 
