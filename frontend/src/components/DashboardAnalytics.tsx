@@ -215,7 +215,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         clearable
                         valueFormat="DD/MM/YYYY"
                         value={dateFrom}
-                        onChange={setDateFrom}
+                        onChange={(val: any) => setDateFrom(val)}
                         radius="md"
                     />
                     <DateInput
@@ -224,7 +224,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         clearable
                         valueFormat="DD/MM/YYYY"
                         value={dateTo}
-                        onChange={(val) => { setDateTo(val); setPeriod(''); }}
+                        onChange={(val: any) => { setDateTo(val); setPeriod(''); }}
                         radius="md"
                     />
                 </Group>
@@ -388,7 +388,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#1A1B1E', borderColor: '#2C2E33', borderRadius: 8 }}
                                         itemStyle={{ color: '#C1C2C5' }}
-                                        formatter={(value: number) => formatCurrency(value)}
+                                        formatter={(value: any) => formatCurrency(value)}
                                     />
                                     <Legend
                                         layout="vertical"

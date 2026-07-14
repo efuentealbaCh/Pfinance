@@ -1,13 +1,13 @@
-import { Container, Title, Button, Card, Text, Group, Badge, SimpleGrid, Modal, TextInput, Stack, ActionIcon, Alert, Loader } from '@mantine/core';
+import { Container, Title, Button, Card, Text, Group, Badge, SimpleGrid, Modal, TextInput, Stack, Alert, Loader } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconUsers, IconArrowRight, IconBell, IconCheck, IconX } from '@tabler/icons-react';
+import { IconPlus, IconArrowRight, IconBell, IconCheck, IconX } from '@tabler/icons-react';
 import { useGroups, useCreateGroup, usePendingInvitations, useAcceptInvite, useRejectInvite } from '../api/queries';
 import { useNavigate } from 'react-router-dom';
 
 export default function GroupsList() {
   const { data: groups, isLoading } = useGroups();
-  const { data: pendingInvitations, isLoading: isInvitationsLoading } = usePendingInvitations();
+  const { data: pendingInvitations } = usePendingInvitations();
   const createGroupMutation = useCreateGroup();
   const acceptMutation = useAcceptInvite();
   const rejectMutation = useRejectInvite();
@@ -16,7 +16,7 @@ export default function GroupsList() {
 
   const form = useForm({
     initialValues: { name: '', description: '' },
-    validate: { name: (v) => (v.trim().length === 0 ? 'Requerido' : null) },
+    validate: { name: (v: string) => (v.trim().length === 0 ? 'Requerido' : null) },
   });
 
   const handleSubmit = (values: typeof form.values) => {

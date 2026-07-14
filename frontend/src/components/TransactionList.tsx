@@ -29,12 +29,12 @@ interface Transaction {
     user_account: {
         id: string;
         identifier: string | null;
-        bank: { id: string; name: string };
+        bank: { id: string; name: string; logo?: string | null };
     };
     target_account?: {
         id: string;
         identifier: string | null;
-        bank: { id: string; name: string };
+        bank: { id: string; name: string; logo?: string | null };
     } | null;
 }
 
@@ -191,7 +191,6 @@ export default function TransactionList({
                             <NumberInput
                                 size="xs"
                                 placeholder="Monto mínimo"
-                                clearable
                                 hideControls
                                 value={filters.amount_min}
                                 onChange={(value) => updateFilter('amount_min', value)}
@@ -201,7 +200,6 @@ export default function TransactionList({
                             <NumberInput
                                 size="xs"
                                 placeholder="Monto máximo"
-                                clearable
                                 hideControls
                                 value={filters.amount_max}
                                 onChange={(value) => updateFilter('amount_max', value)}

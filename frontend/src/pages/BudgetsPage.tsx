@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Container,
     Title,
@@ -52,7 +52,7 @@ function formatCurrency(value: number): string {
 }
 
 export default function BudgetsPage() {
-    const { data: budgetsResponse, isLoading, isError } = useBudgets();
+    const { data: budgetsResponse, isError } = useBudgets();
     const budgets = budgetsResponse?.budgets || [];
     const deleteMutation = useDeleteBudget();
 
@@ -152,7 +152,7 @@ export default function BudgetsPage() {
                         </Stack>
                     ) : (
                         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                            {budgets.map((budget) => {
+                            {budgets.map((budget: any) => {
                                 const progressColor = getProgressColor(budget.percentage);
                                 const isOver = budget.percentage >= 100;
                                 const isWarning = budget.percentage >= 80 && budget.percentage < 100;
