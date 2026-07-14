@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Container,
     Title,
@@ -38,23 +38,7 @@ interface Transaction {
     target_account_id?: string | null;
 }
 
-interface Category {
-    id: string;
-    name: string;
-    icon: string | null;
-}
 
-interface UserAccount {
-    id: string;
-    identifier: string | null;
-    bank: { id: string; name: string };
-}
-
-interface PaginatedResponse {
-    data: Transaction[];
-    current_page: number;
-    last_page: number;
-}
 
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -86,10 +70,10 @@ export default function TransactionsPage() {
     if (filters.user_account_id) queryParams.user_account_id = filters.user_account_id;
     if (filters.date_from) queryParams.date_from = filters.date_from.toISOString().split('T')[0];
     if (filters.date_to) queryParams.date_to = filters.date_to.toISOString().split('T')[0];
-    if (filters.amount_min) queryParams.amount_min = filters.amount_min;
-    if (filters.amount_max) queryParams.amount_max = filters.amount_max;
+    if (filters.amount_min) queryParams.amount_min = String(filters.amount_min);
+    if (filters.amount_max) queryParams.amount_max = String(filters.amount_max);
 
-    const { data: txData, isFetching } = useTransactions(queryParams);
+    const { data: txData } = useTransactions(queryParams);
     const deleteMutation = useDeleteTransaction();
 
     useEffect(() => {

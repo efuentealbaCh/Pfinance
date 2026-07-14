@@ -37,7 +37,7 @@ export default function RegisterPage() {
         value.length >= 8
           ? null
           : 'La contraseña debe tener al menos 8 caracteres',
-      passwordConfirmation: (value, values) =>
+      passwordConfirmation: (value: string, values: { password: string }) =>
         value === values.password ? null : 'Las contraseñas no coinciden',
     },
   });

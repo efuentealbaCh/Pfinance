@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Container,
     Title,
@@ -49,7 +49,7 @@ function getDaysRemaining(deadline: string): number {
 }
 
 export default function SavingsGoalsPage() {
-    const { data: goalsResponse, isLoading, isError } = useSavingsGoals();
+    const { data: goalsResponse, isError } = useSavingsGoals();
     const goals = goalsResponse?.goals || [];
     const deleteMutation = useDeleteSavingsGoal();
 
@@ -145,9 +145,9 @@ export default function SavingsGoalsPage() {
     };
 
     // Resumen
-    const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0);
-    const totalTarget = goals.reduce((sum, g) => sum + g.target_amount, 0);
-    const completedGoals = goals.filter((g) => g.is_completed).length;
+    const totalSaved = goals.reduce((sum: number, g: GoalData) => sum + g.current_amount, 0);
+    const totalTarget = goals.reduce((sum: number, g: GoalData) => sum + g.target_amount, 0);
+    const completedGoals = goals.filter((g: GoalData) => g.is_completed).length;
 
     return (
         <>
@@ -211,7 +211,7 @@ export default function SavingsGoalsPage() {
                         </Stack>
                     ) : (
                         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                            {goals.map((goal) => {
+                            {goals.map((goal: GoalData) => {
                                 const color = goal.color || '#4ECDC4';
                                 const daysLeft = goal.deadline
                                     ? getDaysRemaining(goal.deadline)
