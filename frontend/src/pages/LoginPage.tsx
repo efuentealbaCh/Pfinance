@@ -27,9 +27,9 @@ export default function LoginPage() {
       password: '',
     },
     validate: {
-      email: (value) =>
+      email: (value: string) =>
         /^\S+@\S+$/.test(value) ? null : 'Ingresa un correo válido',
-      password: (value) =>
+      password: (value: string) =>
         value.length > 0 ? null : 'La contraseña es obligatoria',
     },
   });
