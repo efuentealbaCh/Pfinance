@@ -376,7 +376,7 @@ export const useSavingsGoals = () => {
     queryKey: ['savings-goals'],
     queryFn: async () => {
       const response = await api.get('/savings-goals');
-      return response.data.savings_goals || response.data;
+      return response.data.goals || response.data.savings_goals || response.data;
     },
   });
 };
