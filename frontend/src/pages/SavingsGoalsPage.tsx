@@ -50,7 +50,7 @@ function getDaysRemaining(deadline: string): number {
 
 export default function SavingsGoalsPage() {
     const { data: goalsResponse, isError } = useSavingsGoals();
-    const goals = goalsResponse?.goals || [];
+    const goals: SavingsGoalData[] = Array.isArray(goalsResponse) ? goalsResponse : [];
     const deleteMutation = useDeleteSavingsGoal();
 
     const [modalOpened, setModalOpened] = useState(false);
