@@ -53,7 +53,7 @@ function formatCurrency(value: number): string {
 
 export default function BudgetsPage() {
     const { data: budgetsResponse, isLoading, isError } = useBudgets();
-    const budgets = budgetsResponse?.budgets || [];
+    const budgets: BudgetData[] = Array.isArray(budgetsResponse) ? budgetsResponse : [];
     const deleteMutation = useDeleteBudget();
 
     const [modalOpened, setModalOpened] = useState(false);
