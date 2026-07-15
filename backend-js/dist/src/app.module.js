@@ -23,12 +23,13 @@ const dashboard_module_1 = require("./dashboard/dashboard.module");
 const export_module_1 = require("./export/export.module");
 const groups_module_1 = require("./groups/groups.module");
 const shared_debts_module_1 = require("./shared-debts/shared-debts.module");
+const webhook_module_1 = require("./webhook/webhook.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, banks_module_1.BanksModule, account_types_module_1.AccountTypesModule, categories_module_1.CategoriesModule, user_accounts_module_1.UserAccountsModule, transactions_module_1.TransactionsModule, budgets_module_1.BudgetsModule, savings_goals_module_1.SavingsGoalsModule, dashboard_module_1.DashboardModule, export_module_1.ExportModule, groups_module_1.GroupsModule, shared_debts_module_1.SharedDebtsModule],
+        imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule, banks_module_1.BanksModule, account_types_module_1.AccountTypesModule, categories_module_1.CategoriesModule, user_accounts_module_1.UserAccountsModule, transactions_module_1.TransactionsModule, budgets_module_1.BudgetsModule, savings_goals_module_1.SavingsGoalsModule, dashboard_module_1.DashboardModule, export_module_1.ExportModule, groups_module_1.GroupsModule, shared_debts_module_1.SharedDebtsModule, webhook_module_1.WebhookModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })
