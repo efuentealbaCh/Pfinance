@@ -52,7 +52,7 @@ function formatCurrency(value: number): string {
 }
 
 export default function BudgetsPage() {
-  const { data: budgetsResponse, isLoading, isError } = useBudgets();
+  const { data: budgetsResponse, isError } = useBudgets();
   const budgets: BudgetData[] = Array.isArray(budgetsResponse)
     ? budgetsResponse
     : [];
