@@ -114,7 +114,7 @@ export default function GroupDetail() {
                   </Group>
                   <Text size="sm" c="dimmed" mb="md">Creado por {debt.creator?.name} el {debt.date}</Text>
 
-                  <Table size="sm" striped>
+                  <Table striped>
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th>Miembro</Table.Th>

@@ -144,7 +144,7 @@ export const useCreateSharedDebt = () => {
 export const usePaySharedDebt = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ debtId, groupId }: { debtId: string; groupId: string }) => {
+    mutationFn: async ({ debtId }: { debtId: string; groupId: string }) => {
       const response = await api.put(`/debts/${debtId}/pay`);
       return response.data;
     },

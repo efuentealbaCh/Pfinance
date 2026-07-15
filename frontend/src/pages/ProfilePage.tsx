@@ -30,8 +30,8 @@ export default function ProfilePage() {
             email: user?.email || '',
         },
         validate: {
-            name: (v) => (v.trim() ? null : 'El nombre es obligatorio'),
-            email: (v) => (/^\S+@\S+$/.test(v) ? null : 'Email inválido'),
+            name: (v: string) => (v.trim() ? null : 'El nombre es obligatorio'),
+            email: (v: string) => (/^\S+@\S+$/.test(v) ? null : 'Email inválido'),
         },
     });
 
@@ -69,10 +69,10 @@ export default function ProfilePage() {
             new_password_confirmation: '',
         },
         validate: {
-            current_password: (v) => (v ? null : 'La contraseña actual es obligatoria'),
-            new_password: (v) =>
+            current_password: (v: string) => (v ? null : 'La contraseña actual es obligatoria'),
+            new_password: (v: string) =>
                 v.length >= 8 ? null : 'La nueva contraseña debe tener al menos 8 caracteres',
-            new_password_confirmation: (v, values) =>
+            new_password_confirmation: (v: string, values: { new_password: string }) =>
                 v === values.new_password ? null : 'Las contraseñas no coinciden',
         },
     });

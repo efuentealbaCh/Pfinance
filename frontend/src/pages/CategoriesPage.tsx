@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Container,
     Title,
@@ -116,7 +116,7 @@ export default function CategoriesPage() {
                         </Text>
                     ) : (
                         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-                            {categories.map((cat) => (
+                            {categories.map((cat: Category) => (
                                 <Paper
                                     key={cat.id}
                                     withBorder

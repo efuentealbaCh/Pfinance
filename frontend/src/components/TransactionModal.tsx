@@ -15,19 +15,6 @@ import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useCreateTransaction, useUpdateTransaction, useCatalogs } from '../api/queries';
 
-interface Category {
-    id: string;
-    name: string;
-    icon: string | null;
-    color: string | null;
-}
-
-interface UserAccount {
-    id: string;
-    identifier: string | null;
-    bank: { id: string; name: string };
-    account_type: { id: string; name: string };
-}
 
 interface TransactionFormData {
     user_account_id: string;
@@ -197,7 +184,7 @@ export default function TransactionModal({
                     <Select
                         label={form.values.type === 'transfer' ? 'Cuenta de origen' : 'Cuenta'}
                         placeholder="Selecciona una cuenta"
-                        data={accounts.map((a) => ({
+                        data={accounts.map((a: any) => ({
                             value: a.id,
                             label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
                         }))}
@@ -211,7 +198,7 @@ export default function TransactionModal({
                         <Select
                             label="Cuenta de destino"
                             placeholder="Selecciona cuenta destino"
-                            data={accounts.map((a) => ({
+                            data={accounts.map((a: any) => ({
                                 value: a.id,
                                 label: `${a.bank.name}${a.identifier ? ` — ${a.identifier}` : ''}`,
                                 disabled: a.id === form.values.user_account_id
@@ -227,7 +214,7 @@ export default function TransactionModal({
                         <Select
                             label="Categoría"
                             placeholder="Selecciona una categoría"
-                            data={categories.map((c) => ({
+                            data={categories.map((c: any) => ({
                                 value: c.id,
                                 label: `${c.icon || '📁'} ${c.name}`,
                             }))}

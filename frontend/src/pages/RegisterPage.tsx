@@ -29,11 +29,11 @@ export default function RegisterPage() {
       passwordConfirmation: '',
     },
     validate: {
-      name: (value) =>
+      name: (value: string) =>
         value.length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres',
-      email: (value) =>
+      email: (value: string) =>
         /^\S+@\S+$/.test(value) ? null : 'Ingresa un correo válido',
-      password: (value) =>
+      password: (value: string) =>
         value.length >= 8
           ? null
           : 'La contraseña debe tener al menos 8 caracteres',

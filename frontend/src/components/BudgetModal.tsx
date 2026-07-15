@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
     Modal,
-    TextInput,
     NumberInput,
     Select,
     Button,
@@ -47,9 +46,9 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
             period: 'monthly',
         },
         validate: {
-            category_id: (v) => (!v ? 'Selecciona una categoría' : null),
-            amount: (v) => (v < 1 ? 'El monto debe ser al menos $1' : null),
-            period: (v) => (!v ? 'Selecciona un período' : null),
+            category_id: (v: string) => (!v ? 'Selecciona una categoría' : null),
+            amount: (v: number) => (v < 1 ? 'El monto debe ser al menos $1' : null),
+            period: (v: string) => (!v ? 'Selecciona un período' : null),
         },
     });
 
@@ -128,7 +127,7 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
                         label="Categoría"
                         placeholder="Selecciona una categoría"
                         searchable
-                        data={categories.map((c) => ({
+                        data={categories.map((c: any) => ({
                             value: c.id,
                             label: `${c.icon || '📁'} ${c.name}`,
                         }))}
