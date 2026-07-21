@@ -6,7 +6,7 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 
 ### 🔐 Autenticación y Seguridad
 - Registro e inicio de sesión seguro con JWT (JSON Web Tokens).
-- Gestión de perfil (actualización de datos personales).
+- Gestión de perfil (actualización de datos personales y **RUT** como identificador único).
 - Cambio de contraseña encriptada (bcrypt).
 - Protección de rutas tanto en el Frontend como en el Backend.
 
@@ -21,8 +21,11 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 - Asignación de transacciones a cuentas bancarias específicas.
 - Historial completo con filtros avanzados (por fecha, tipo, categoría, cuenta y monto).
 
-### 🏦 Cuentas y Categorías
-- Gestión de múltiples cuentas bancarias (corrientes, ahorro, efectivo, etc.).
+### 🏦 Cuentas, Tarjetas y Categorías
+- **Nueva Arquitectura Financiera**: Separación real de Cuentas Bancarias y Tarjetas (Débito/Crédito) como medios de pago.
+- Catálogo de Bancos oficiales chilenos integrados con logos dinámicos (Clearbit API).
+- Creación guiada de cuentas (Wizard / Stepper) para vincular múltiples tarjetas a una misma cuenta bancaria.
+- Opción rápida de "Copiar Datos" para transferencias con un clic.
 - Categorías personalizables para organizar detalladamente en qué gastas tu dinero.
 
 ### 🎯 Metas de Ahorro
@@ -44,6 +47,10 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 ### 📱 PWA (Progressive Web App)
 - La aplicación puede instalarse nativamente en móviles y escritorios para una experiencia similar a una app nativa.
 
+### 🔄 Sincronización Webhook (Local ↔ Remoto)
+- Prisma Middleware incorporado para interceptar mutaciones locales (Crear, Actualizar, Eliminar).
+- Disparo automático de webhooks seguros hacia el servidor de producción para mantener las bases de datos (Supabase) 100% espejadas en tiempo real.
+
 ---
 
 ## 🛠️ Stack Tecnológico
@@ -60,46 +67,6 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 - [TypeScript](https://www.typescriptlang.org/)
 - [Prisma ORM](https://www.prisma.io/) (Interacción con base de datos)
 - [PostgreSQL](https://www.postgresql.org/) (Base de datos alojada en Supabase)
-
----
-
-## 🚀 Instalación y Despliegue Local (Sin Docker)
-
-### Requisitos Previos
-- Node.js (v18 o superior)
-- PostgreSQL (Local o una base de datos en Supabase)
-
-### 1. Configurar el Backend
-```bash
-cd backend-js
-npm install
-```
-Crea un archivo `.env` en `backend-js/` basándote en un posible `.env.example`:
-```env
-DATABASE_URL="postgresql://usuario:password@localhost:5432/pfinance"
-JWT_SECRET="tu_super_secreto_aqui"
-PORT=3000
-```
-Aplica las migraciones de Prisma e inicia el servidor:
-```bash
-npx prisma migrate dev
-npm run start:dev
-```
-
-### 2. Configurar el Frontend
-Abre otra terminal:
-```bash
-cd frontend
-npm install
-```
-Crea un archivo `.env` en `frontend/`:
-```env
-VITE_API_URL="http://localhost:3000/api"
-```
-Inicia el entorno de desarrollo:
-```bash
-npm run dev
-```
 
 ---
 
@@ -168,6 +135,46 @@ docker-compose up -d --build
 - Tu **Frontend** estará corriendo en: `http://localhost`
 - Tu **Backend** estará corriendo en: `http://localhost:3000`
 - Tu **Base de datos** PostgreSQL estará aislada y configurada.
+
+---
+
+## 🚀 Instalación y Despliegue Local (Sin Docker)
+
+### Requisitos Previos
+- Node.js (v18 o superior)
+- PostgreSQL (Local o una base de datos en Supabase)
+
+### 1. Configurar el Backend
+```bash
+cd backend-js
+npm install
+```
+Crea un archivo `.env` en `backend-js/` basándote en un posible `.env.example`:
+```env
+DATABASE_URL="postgresql://usuario:password@localhost:5432/pfinance"
+JWT_SECRET="tu_super_secreto_aqui"
+PORT=3000
+```
+Aplica las migraciones de Prisma e inicia el servidor:
+```bash
+npx prisma migrate dev
+npm run start:dev
+```
+
+### 2. Configurar el Frontend
+Abre otra terminal:
+```bash
+cd frontend
+npm install
+```
+Crea un archivo `.env` en `frontend/`:
+```env
+VITE_API_URL="http://localhost:3000/api"
+```
+Inicia el entorno de desarrollo:
+```bash
+npm run dev
+```
 
 ---
 

@@ -18,11 +18,21 @@ export class AuthService {
       throw new BadRequestException('El correo ya está en uso');
     }
 
+    if (data.rut) {
+      const existingRut = await this.prisma.users.findUnique({
+        where: { rut: data.rut },
+      });
+      if (existingRut) {
+        throw new BadRequestException('El RUT ya está registrado');
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = await this.prisma.users.create({
       data: {
         name: data.name,
         email: data.email,
+        rut: data.rut,
         password: hashedPassword,
         created_at: new Date(),
         updated_at: new Date(),
@@ -31,7 +41,7 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     return {
-      user: { id: user.id.toString(), name: user.name, email: user.email },
+      user: { id: user.id.toString(), name: user.name, email: user.email, rut: user.rut },
       token: this.jwtService.sign(payload),
     };
   }
@@ -51,7 +61,7 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     return {
-      user: { id: user.id.toString(), name: user.name, email: user.email },
+      user: { id: user.id.toString(), name: user.name, email: user.email, rut: user.rut },
       token: this.jwtService.sign(payload),
     };
   }
@@ -62,10 +72,11 @@ export class AuthService {
       data: {
         name: data.name,
         email: data.email,
+        rut: data.rut,
         updated_at: new Date(),
       },
     });
-    return { id: updatedUser.id.toString(), name: updatedUser.name, email: updatedUser.email };
+    return { id: updatedUser.id.toString(), name: updatedUser.name, email: updatedUser.email, rut: updatedUser.rut };
   }
 
   async updatePassword(userId: bigint, data: any) {

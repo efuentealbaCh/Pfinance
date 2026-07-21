@@ -29,7 +29,7 @@ let UserAccountsService = class UserAccountsService {
     async findAll(userId) {
         const accounts = await this.prisma.user_accounts.findMany({
             where: { user_id: userId },
-            include: { banks: true, account_types: true },
+            include: { banks: true, account_types: true, cards: true },
             orderBy: { created_at: 'desc' },
         });
         return { accounts: accounts.map(a => this.mapAccount(a)) };
@@ -37,7 +37,7 @@ let UserAccountsService = class UserAccountsService {
     async findOne(id, userId) {
         const account = await this.prisma.user_accounts.findFirst({
             where: { id, user_id: userId },
-            include: { banks: true, account_types: true },
+            include: { banks: true, account_types: true, cards: true },
         });
         if (!account)
             throw new common_1.NotFoundException('Account not found');
@@ -52,10 +52,21 @@ let UserAccountsService = class UserAccountsService {
                 account_type_id: data.account_type_id,
                 identifier: data.identifier,
                 balance: data.balance || 0,
+                cards: data.cards && data.cards.length > 0 ? {
+                    create: data.cards.map((c) => ({
+                        id: (0, crypto_1.randomUUID)(),
+                        name: c.name,
+                        type: c.type,
+                        last_four: c.last_four,
+                        balance: c.balance || 0,
+                        created_at: new Date(),
+                        updated_at: new Date(),
+                    }))
+                } : undefined,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
-            include: { banks: true, account_types: true },
+            include: { banks: true, account_types: true, cards: true },
         });
         return { message: 'Cuenta creada exitosamente.', account: this.mapAccount(account) };
     }
@@ -70,9 +81,23 @@ let UserAccountsService = class UserAccountsService {
                 account_type_id: data.account_type_id,
                 identifier: data.identifier,
                 balance: data.balance,
+                cards: {
+                    deleteMany: {},
+                    ...(data.cards && data.cards.length > 0 ? {
+                        create: data.cards.map((c) => ({
+                            id: (0, crypto_1.randomUUID)(),
+                            name: c.name,
+                            type: c.type,
+                            last_four: c.last_four,
+                            balance: c.balance || 0,
+                            created_at: new Date(),
+                            updated_at: new Date(),
+                        }))
+                    } : {})
+                },
                 updated_at: new Date(),
             },
-            include: { banks: true, account_types: true },
+            include: { banks: true, account_types: true, cards: true },
         });
         return { message: 'Cuenta actualizada exitosamente.', account: this.mapAccount(account) };
     }

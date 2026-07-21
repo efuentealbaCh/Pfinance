@@ -250,6 +250,7 @@ model transactions {
   date             DateTime           @db.Date
   type             String             @db.VarChar(255)
   is_shared        Boolean            @default(true)
+  card_id          String?            @db.Uuid
   created_at       DateTime?          @db.Timestamp(0)
   updated_at       DateTime?          @db.Timestamp(0)
   transaction_logs transaction_logs[]
@@ -257,6 +258,7 @@ model transactions {
   user_accounts    user_accounts      @relation("transactions_user_account", fields: [user_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_account_id_foreign")
   target_accounts  user_accounts?     @relation("transactions_target_account", fields: [target_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users            users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_id_foreign")
+  cards            cards?             @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   shared_debts     shared_debts[]
 }
 
@@ -274,11 +276,26 @@ model user_accounts {
   account_types   account_types  @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_account_type_id_foreign")
   banks           banks          @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_bank_id_foreign")
   users           users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_accounts_user_id_foreign")
+  cards           cards[]
+}
+
+model cards {
+  id              String         @id @db.Uuid
+  user_account_id String         @db.Uuid
+  name            String         @db.VarChar(255)
+  type            String         @db.VarChar(50)
+  last_four       String?        @db.VarChar(4)
+  balance         Decimal        @default(0) @db.Decimal(15, 2)
+  created_at      DateTime?      @db.Timestamp(0)
+  updated_at      DateTime?      @db.Timestamp(0)
+  user_accounts   user_accounts  @relation(fields: [user_account_id], references: [id], onDelete: Cascade)
+  transactions    transactions[]
 }
 
 model users {
   id                 BigInt               @id @default(autoincrement())
   name               String               @db.VarChar(255)
+  rut                String?              @unique(map: "users_rut_unique") @db.VarChar(20)
   email              String               @unique(map: "users_email_unique") @db.VarChar(255)
   email_verified_at  DateTime?            @db.Timestamp(0)
   password           String               @db.VarChar(255)

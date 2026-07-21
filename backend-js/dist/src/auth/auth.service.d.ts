@@ -9,6 +9,7 @@ export declare class AuthService {
             id: string;
             name: string;
             email: string;
+            rut: string | null;
         };
         token: string;
     }>;
@@ -17,6 +18,7 @@ export declare class AuthService {
             id: string;
             name: string;
             email: string;
+            rut: string | null;
         };
         token: string;
     }>;
@@ -24,6 +26,7 @@ export declare class AuthService {
         id: string;
         name: string;
         email: string;
+        rut: string | null;
     }>;
     updatePassword(userId: bigint, data: any): Promise<{
         message: string;
