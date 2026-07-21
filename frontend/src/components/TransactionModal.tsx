@@ -25,6 +25,7 @@ interface TransactionFormData {
     date: Date | null;
     description: string;
     is_shared: boolean;
+    card_id: string;
 }
 
 interface TransactionEditData {
@@ -37,6 +38,7 @@ interface TransactionEditData {
     date: string;
     description: string;
     is_shared: boolean;
+    card_id: string | null;
 }
 
 interface TransactionModalProps {
@@ -71,6 +73,7 @@ export default function TransactionModal({
             date: new Date(),
             description: '',
             is_shared: true,
+            card_id: '',
         },
         validate: {
             user_account_id: (value) => (value ? null : 'Selecciona una cuenta de origen'),
@@ -101,6 +104,7 @@ export default function TransactionModal({
                 date: new Date(editData.date),
                 description: editData.description || '',
                 is_shared: editData.is_shared,
+                card_id: editData.card_id || '',
             });
         } else {
             form.reset();
@@ -193,6 +197,28 @@ export default function TransactionModal({
                         radius="md"
                         {...form.getInputProps('user_account_id')}
                     />
+
+                    {/* Selector de Tarjeta (Solo si la cuenta seleccionada tiene tarjetas) */}
+                    {(() => {
+                        const selectedAccount = accounts.find((a: any) => a.id === form.values.user_account_id);
+                        if (selectedAccount && selectedAccount.cards && selectedAccount.cards.length > 0) {
+                            return (
+                                <Select
+                                    label="Medio de pago (Tarjeta)"
+                                    placeholder="Selecciona una tarjeta (Opcional)"
+                                    data={selectedAccount.cards.map((c: any) => ({
+                                        value: c.id,
+                                        label: `${c.name} (•••• ${c.last_four})`
+                                    }))}
+                                    clearable
+                                    searchable
+                                    radius="md"
+                                    {...form.getInputProps('card_id')}
+                                />
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {form.values.type === 'transfer' && (
                         <Select

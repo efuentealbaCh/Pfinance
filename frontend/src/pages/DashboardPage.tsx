@@ -25,6 +25,7 @@ interface Account {
   account_type_id: string;
   bank: { id: string; name: string };
   account_type: { id: string; name: string };
+  cards?: any[];
 }
 
 export default function DashboardPage() {
@@ -171,6 +172,7 @@ export default function DashboardPage() {
                 account_type_id: editAccount.account_type_id,
                 identifier: editAccount.identifier || "",
                 balance: Number(editAccount.balance),
+                cards: editAccount.cards || [],
               }
             : null
         }
