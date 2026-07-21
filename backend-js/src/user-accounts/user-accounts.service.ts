@@ -18,7 +18,7 @@ export class UserAccountsService {
   async findAll(userId: bigint) {
     const accounts = await this.prisma.user_accounts.findMany({
       where: { user_id: userId },
-      include: { banks: true, account_types: true },
+      include: { banks: true, account_types: true, cards: true },
       orderBy: { created_at: 'desc' },
     });
     return { accounts: accounts.map(a => this.mapAccount(a)) };
@@ -27,7 +27,7 @@ export class UserAccountsService {
   async findOne(id: string, userId: bigint) {
     const account = await this.prisma.user_accounts.findFirst({
       where: { id, user_id: userId },
-      include: { banks: true, account_types: true },
+      include: { banks: true, account_types: true, cards: true },
     });
     if (!account) throw new NotFoundException('Account not found');
     return { account: this.mapAccount(account) };
@@ -42,10 +42,21 @@ export class UserAccountsService {
         account_type_id: data.account_type_id,
         identifier: data.identifier,
         balance: data.balance || 0,
+        cards: data.cards && data.cards.length > 0 ? {
+          create: data.cards.map((c: any) => ({
+            id: randomUUID(),
+            name: c.name,
+            type: c.type,
+            last_four: c.last_four,
+            balance: c.balance || 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+          }))
+        } : undefined,
         created_at: new Date(),
         updated_at: new Date(),
       },
-      include: { banks: true, account_types: true },
+      include: { banks: true, account_types: true, cards: true },
     });
     return { message: 'Cuenta creada exitosamente.', account: this.mapAccount(account) };
   }
@@ -61,9 +72,23 @@ export class UserAccountsService {
         account_type_id: data.account_type_id,
         identifier: data.identifier,
         balance: data.balance,
+        cards: {
+          deleteMany: {},
+          ...(data.cards && data.cards.length > 0 ? {
+            create: data.cards.map((c: any) => ({
+              id: randomUUID(),
+              name: c.name,
+              type: c.type,
+              last_four: c.last_four,
+              balance: c.balance || 0,
+              created_at: new Date(),
+              updated_at: new Date(),
+            }))
+          } : {})
+        },
         updated_at: new Date(),
       },
-      include: { banks: true, account_types: true },
+      include: { banks: true, account_types: true, cards: true },
     });
     return { message: 'Cuenta actualizada exitosamente.', account: this.mapAccount(account) };
   }

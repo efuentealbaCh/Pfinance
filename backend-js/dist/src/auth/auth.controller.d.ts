@@ -7,6 +7,7 @@ export declare class AuthController {
             id: string;
             name: string;
             email: string;
+            rut: string | null;
         };
         token: string;
     }>;
@@ -15,6 +16,7 @@ export declare class AuthController {
             id: string;
             name: string;
             email: string;
+            rut: string | null;
         };
         token: string;
     }>;
@@ -25,6 +27,7 @@ export declare class AuthController {
         id: string;
         name: string;
         email: string;
+        rut: string | null;
     }>;
     updatePassword(req: any, body: any): Promise<{
         message: string;

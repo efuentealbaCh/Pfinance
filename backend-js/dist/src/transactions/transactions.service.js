@@ -116,6 +116,7 @@ let TransactionsService = class TransactionsService {
                 date: new Date(data.date),
                 type: data.type,
                 is_shared: data.is_shared ?? true,
+                card_id: data.card_id || null,
                 created_at: new Date(),
                 updated_at: new Date(),
             },
@@ -152,7 +153,7 @@ let TransactionsService = class TransactionsService {
                 });
             }
         }
-        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), false, transaction.target_account_id);
+        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), false, transaction.target_account_id, transaction.card_id);
         await this.logAction(transaction.id, userId, 'CREATE', null, transaction, reqMetadata);
         const warnings = await this.checkBudgetWarning(userId, transaction);
         return {
@@ -178,7 +179,7 @@ let TransactionsService = class TransactionsService {
             throw new Error('Target account is required for transfers.');
         }
         const before = transaction;
-        await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true, before.target_account_id);
+        await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true, before.target_account_id, before.card_id);
         const updatedTransaction = await this.prisma.transactions.update({
             where: { id },
             data: {
@@ -190,6 +191,7 @@ let TransactionsService = class TransactionsService {
                 date: data.date ? new Date(data.date) : undefined,
                 type: data.type,
                 is_shared: data.is_shared,
+                card_id: data.card_id || null,
                 updated_at: new Date(),
             },
             include: {
@@ -221,7 +223,7 @@ let TransactionsService = class TransactionsService {
                 }
             }
         }
-        await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount), false, updatedTransaction.target_account_id);
+        await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount), false, updatedTransaction.target_account_id, updatedTransaction.card_id);
         await this.logAction(transaction.id, userId, 'UPDATE', before, updatedTransaction, reqMetadata);
         const warnings = await this.checkBudgetWarning(userId, updatedTransaction);
         return {
@@ -237,7 +239,7 @@ let TransactionsService = class TransactionsService {
         if (!transaction)
             throw new common_1.NotFoundException('Transaction not found');
         await this.logAction(transaction.id, userId, 'DELETE', transaction, null, reqMetadata);
-        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true, transaction.target_account_id);
+        await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true, transaction.target_account_id, transaction.card_id);
         await this.prisma.transactions.delete({ where: { id } });
         return { message: 'Transacción eliminada exitosamente.' };
     }
@@ -256,7 +258,7 @@ let TransactionsService = class TransactionsService {
             }
         });
     }
-    async adjustAccountBalance(userId, accountId, type, amount, revert = false, targetAccountId = null) {
+    async adjustAccountBalance(userId, accountId, type, amount, revert = false, targetAccountId = null, cardId = null) {
         const account = await this.prisma.user_accounts.findFirst({ where: { id: accountId, user_id: userId } });
         if (!account)
             return;
@@ -286,6 +288,20 @@ let TransactionsService = class TransactionsService {
             where: { id: accountId },
             data: { balance },
         });
+        if (cardId) {
+            const card = await this.prisma.cards.findFirst({ where: { id: cardId, user_account_id: accountId } });
+            if (card) {
+                let cardBalance = Number(card.balance);
+                if (type === 'income')
+                    cardBalance += (amount * factor);
+                else if (type === 'expense' || type === 'transfer')
+                    cardBalance -= (amount * factor);
+                await this.prisma.cards.update({
+                    where: { id: cardId },
+                    data: { balance: cardBalance },
+                });
+            }
+        }
     }
     async checkBudgetWarning(userId, transaction) {
         if (transaction.type !== 'expense')
