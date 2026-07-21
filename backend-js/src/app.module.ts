@@ -14,9 +14,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ExportModule } from './export/export.module';
 import { GroupsModule } from './groups/groups.module';
 import { SharedDebtsModule } from './shared-debts/shared-debts.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, BanksModule, AccountTypesModule, CategoriesModule, UserAccountsModule, TransactionsModule, BudgetsModule, SavingsGoalsModule, DashboardModule, ExportModule, GroupsModule, SharedDebtsModule],
+  imports: [PrismaModule, AuthModule, BanksModule, AccountTypesModule, CategoriesModule, UserAccountsModule, TransactionsModule, BudgetsModule, SavingsGoalsModule, DashboardModule, ExportModule, GroupsModule, SharedDebtsModule, WebhookModule],
   controllers: [AppController],
   providers: [AppService],
 })

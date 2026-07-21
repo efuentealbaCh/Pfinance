@@ -5,6 +5,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  rut?: string;
 }
 
 interface AuthContextType {
@@ -13,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, passwordConfirmation: string) => Promise<void>;
+  register: (name: string, email: string, rut: string, password: string, passwordConfirmation: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -51,15 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (
-    name: string,
-    email: string,
-    password: string,
-    passwordConfirmation: string
-  ) => {
+  const register = async (name: string, email: string, rut: string, password: string, passwordConfirmation: string) => {
     const response = await api.post('/auth/register', {
       name,
       email,
+      rut,
       password,
       password_confirmation: passwordConfirmation,
     });

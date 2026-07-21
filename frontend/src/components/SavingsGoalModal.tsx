@@ -67,10 +67,18 @@ export default function SavingsGoalModal({ opened, onClose, onSuccess, editData 
     }, [opened, editData]);
 
     const handleSubmit = (values: typeof form.values) => {
+        let parsedDeadline = null;
+        if (values.deadline) {
+            const d = values.deadline instanceof Date ? values.deadline : new Date(values.deadline);
+            if (!isNaN(d.getTime())) {
+                parsedDeadline = d.toISOString().split('T')[0];
+            }
+        }
+
         const payload = {
             name: values.name,
             target_amount: values.target_amount,
-            deadline: values.deadline ? values.deadline.toISOString().split('T')[0] : null,
+            deadline: parsedDeadline,
             icon: values.icon || null,
             color: values.color || null,
         };

@@ -12,6 +12,8 @@ import {
   Anchor,
   Stack,
   Alert,
+  Progress,
+  Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 
@@ -24,6 +26,7 @@ export default function RegisterPage() {
   const form = useForm({
     initialValues: {
       name: '',
+      rut: '',
       email: '',
       password: '',
       passwordConfirmation: '',
@@ -31,6 +34,7 @@ export default function RegisterPage() {
     validate: {
       name: (value: string) =>
         value.length >= 2 ? null : 'El nombre debe tener al menos 2 caracteres',
+      rut: (value: string) => (value.trim().length > 0 ? null : 'El RUT es obligatorio'),
       email: (value: string) =>
         /^\S+@\S+$/.test(value) ? null : 'Ingresa un correo válido',
       password: (value: string) =>
@@ -42,6 +46,37 @@ export default function RegisterPage() {
     },
   });
 
+  const formatRut = (value: string) => {
+    let cleaned = value.replace(/[^0-9kK]/g, '').toUpperCase();
+    if (cleaned.length <= 1) return cleaned;
+    let result = cleaned.slice(-1);
+    let rutBody = cleaned.slice(0, -1);
+    let formattedBody = '';
+    while (rutBody.length > 3) {
+      formattedBody = '.' + rutBody.slice(-3) + formattedBody;
+      rutBody = rutBody.slice(0, -3);
+    }
+    formattedBody = rutBody + formattedBody;
+    return formattedBody + '-' + result;
+  };
+
+  const getStrength = (password: string) => {
+    if (password.length === 0) return 0;
+    let requirements = 0;
+    if (password.length >= 8) requirements += 1;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) requirements += 1;
+    if (/\d/.test(password)) requirements += 1;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) requirements += 1;
+    return (requirements / 4) * 100;
+  };
+
+  const getStrengthColor = (percentage: number) => {
+    if (percentage < 30) return 'red';
+    if (percentage < 60) return 'yellow';
+    if (percentage < 80) return 'blue';
+    return 'teal';
+  };
+
   const handleSubmit = async (values: typeof form.values) => {
     setError('');
     setLoading(true);
@@ -49,6 +84,7 @@ export default function RegisterPage() {
       await register(
         values.name,
         values.email,
+        values.rut,
         values.password,
         values.passwordConfirmation
       );
@@ -115,6 +151,17 @@ export default function RegisterPage() {
               />
 
               <TextInput
+                label="RUT"
+                placeholder="Ej. 12.345.678-9"
+                description="Solicitamos tu RUT para agilizar la copia de datos bancarios cuando necesites recibir transferencias."
+                required
+                size="md"
+                radius="md"
+                {...form.getInputProps('rut')}
+                onChange={(e) => form.setFieldValue('rut', formatRut(e.currentTarget.value))}
+              />
+
+              <TextInput
                 label="Correo electrónico"
                 placeholder="tu@email.com"
                 required
@@ -123,14 +170,24 @@ export default function RegisterPage() {
                 {...form.getInputProps('email')}
               />
 
-              <PasswordInput
-                label="Contraseña"
-                placeholder="Mínimo 8 caracteres"
-                required
-                size="md"
-                radius="md"
-                {...form.getInputProps('password')}
-              />
+              <div>
+                <PasswordInput
+                  label="Contraseña"
+                  placeholder="Mínimo 8 caracteres"
+                  required
+                  size="md"
+                  radius="md"
+                  {...form.getInputProps('password')}
+                />
+                <Group gap={5} grow mt="xs" mb="md">
+                  <Progress
+                    size="sm"
+                    color={getStrengthColor(getStrength(form.values.password))}
+                    value={getStrength(form.values.password)}
+                    transitionDuration={250}
+                  />
+                </Group>
+              </div>
 
               <PasswordInput
                 label="Confirmar contraseña"

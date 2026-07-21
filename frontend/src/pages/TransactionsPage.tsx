@@ -24,6 +24,7 @@ interface Transaction {
     date: string;
     type: 'income' | 'expense' | 'transfer';
     is_shared: boolean;
+    card_id?: string | null;
     category: { id: string; name: string; icon: string | null; color: string | null };
     user_account: {
         id: string;
@@ -253,6 +254,7 @@ export default function TransactionsPage() {
                             date: editTransaction.date,
                             description: editTransaction.description || '',
                             is_shared: editTransaction.is_shared,
+                            card_id: editTransaction.card_id || null,
                         }
                         : null
                 }
