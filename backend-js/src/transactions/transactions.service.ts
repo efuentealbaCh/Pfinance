@@ -35,7 +35,7 @@ export class TransactionsService {
     };
   }
 
-  async findAll(userId: bigint, filters: any) {
+  async findAll(userId: string, filters: any) {
     const where: any = { user_id: userId };
 
     if (filters.type) where.type = filters.type;
@@ -70,7 +70,7 @@ export class TransactionsService {
     return { data: transactions.map(t => this.mapTransaction(t)) };
   }
 
-  async findOne(id: string, userId: bigint) {
+  async findOne(id: string, userId: string) {
     const transaction = await this.prisma.transactions.findFirst({
       where: { id, user_id: userId },
       include: {
@@ -85,7 +85,7 @@ export class TransactionsService {
     return { transaction: this.mapTransaction(transaction) };
   }
 
-  async create(userId: bigint, data: any, reqMetadata: any) {
+  async create(userId: string, data: any, reqMetadata: any) {
     const account = await this.prisma.user_accounts.findFirst({
       where: { id: data.user_account_id, user_id: userId },
     });
@@ -120,7 +120,7 @@ export class TransactionsService {
 
     if (data.is_shared && data.group_id && data.type === 'expense') {
       const groupMembers = await this.prisma.group_user.findMany({
-        where: { group_id: BigInt(data.group_id) }
+        where: { group_id: data.group_id }
       });
       if (groupMembers.length > 0) {
         const splitAmount = Number(data.amount) / groupMembers.length;
@@ -128,7 +128,7 @@ export class TransactionsService {
         
         await this.prisma.shared_debts.create({
           data: {
-            group_id: BigInt(data.group_id),
+            group_id: data.group_id,
             created_by: userId,
             title: data.description || 'Gasto compartido',
             amount: data.amount,
@@ -159,7 +159,7 @@ export class TransactionsService {
     };
   }
 
-  async update(id: string, userId: bigint, data: any, reqMetadata: any) {
+  async update(id: string, userId: string, data: any, reqMetadata: any) {
     const transaction = await this.prisma.transactions.findFirst({
       where: { id, user_id: userId },
     });
@@ -239,7 +239,7 @@ export class TransactionsService {
     };
   }
 
-  async remove(id: string, userId: bigint, reqMetadata: any) {
+  async remove(id: string, userId: string, reqMetadata: any) {
     const transaction = await this.prisma.transactions.findFirst({
       where: { id, user_id: userId },
     });
@@ -253,7 +253,7 @@ export class TransactionsService {
     return { message: 'Transacción eliminada exitosamente.' };
   }
 
-  private async logAction(transactionId: string, userId: bigint, action: string, before: any, after: any, reqMetadata: any) {
+  private async logAction(transactionId: string, userId: string, action: string, before: any, after: any, reqMetadata: any) {
     await this.prisma.transaction_logs.create({
       data: {
         id: randomUUID(),
@@ -269,7 +269,7 @@ export class TransactionsService {
     });
   }
 
-  private async adjustAccountBalance(userId: bigint, accountId: string, type: string, amount: number, revert = false, targetAccountId: string | null = null, cardId: string | null = null) {
+  private async adjustAccountBalance(userId: string, accountId: string, type: string, amount: number, revert = false, targetAccountId: string | null = null, cardId: string | null = null) {
     const account = await this.prisma.user_accounts.findFirst({ where: { id: accountId, user_id: userId } });
     if (!account) return;
 
@@ -318,7 +318,7 @@ export class TransactionsService {
     }
   }
 
-  private async checkBudgetWarning(userId: bigint, transaction: any) {
+  private async checkBudgetWarning(userId: string, transaction: any) {
     if (transaction.type !== 'expense') return [];
 
     const date = new Date();

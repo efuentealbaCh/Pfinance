@@ -3,21 +3,21 @@ export declare class UserAccountsService {
     private prisma;
     constructor(prisma: PrismaService);
     private mapAccount;
-    findAll(userId: bigint): Promise<{
+    findAll(userId: string): Promise<{
         accounts: any[];
     }>;
-    findOne(id: string, userId: bigint): Promise<{
+    findOne(id: string, userId: string): Promise<{
         account: any;
     }>;
-    create(userId: bigint, data: any): Promise<{
+    create(userId: string, data: any): Promise<{
         message: string;
         account: any;
     }>;
-    update(id: string, userId: bigint, data: any): Promise<{
+    update(id: string, userId: string, data: any): Promise<{
         message: string;
         account: any;
     }>;
-    remove(id: string, userId: bigint): Promise<{
+    remove(id: string, userId: string): Promise<{
         message: string;
     }>;
 }

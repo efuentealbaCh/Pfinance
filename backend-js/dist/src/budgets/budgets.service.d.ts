@@ -2,21 +2,21 @@ import { PrismaService } from '../prisma/prisma.service';
 export declare class BudgetsService {
     private prisma;
     constructor(prisma: PrismaService);
-    findAll(userId: bigint): Promise<{
+    findAll(userId: string): Promise<{
         budgets: any[];
     }>;
-    findOne(id: string, userId: bigint): Promise<{
+    findOne(id: string, userId: string): Promise<{
         budget: any;
     }>;
-    create(userId: bigint, data: any): Promise<{
+    create(userId: string, data: any): Promise<{
         message: string;
         budget: any;
     }>;
-    update(id: string, userId: bigint, data: any): Promise<{
+    update(id: string, userId: string, data: any): Promise<{
         message: string;
         budget: any;
     }>;
-    remove(id: string, userId: bigint): Promise<{
+    remove(id: string, userId: string): Promise<{
         message: string;
     }>;
     private enrichBudgetWithSpent;

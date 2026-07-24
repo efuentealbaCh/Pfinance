@@ -22,7 +22,7 @@ let SharedDebtsService = class SharedDebtsService {
         if (Math.round(sum * 100) / 100 !== 100.00) {
             throw new common_1.UnprocessableEntityException('Percentages must sum to 100.');
         }
-        const gId = BigInt(groupId);
+        const gId = groupId;
         const groupMembership = await this.prisma.group_user.findFirst({
             where: { group_id: gId, user_id: userId }
         });
@@ -46,7 +46,7 @@ let SharedDebtsService = class SharedDebtsService {
                     await tx.shared_debt_splits.create({
                         data: {
                             shared_debt_id: created.id,
-                            user_id: BigInt(split.user_id),
+                            user_id: split.user_id,
                             percentage: split.percentage,
                             amount_owed,
                             is_paid: false,
@@ -73,7 +73,7 @@ let SharedDebtsService = class SharedDebtsService {
         return debt;
     }
     async pay(debtId, userId) {
-        const dId = BigInt(debtId);
+        const dId = debtId;
         const split = await this.prisma.shared_debt_splits.findFirst({
             where: { shared_debt_id: dId, user_id: userId }
         });

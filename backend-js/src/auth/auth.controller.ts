@@ -23,7 +23,7 @@ export class AuthController {
     return {
       user: {
         ...user,
-        id: user.id.toString(),
+        id: user.id,
       }
     };
   }

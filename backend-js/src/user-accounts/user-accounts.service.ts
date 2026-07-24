@@ -15,7 +15,7 @@ export class UserAccountsService {
     };
   }
 
-  async findAll(userId: bigint) {
+  async findAll(userId: string) {
     const accounts = await this.prisma.user_accounts.findMany({
       where: { user_id: userId },
       include: { banks: true, account_types: true, cards: true },
@@ -24,7 +24,7 @@ export class UserAccountsService {
     return { accounts: accounts.map(a => this.mapAccount(a)) };
   }
 
-  async findOne(id: string, userId: bigint) {
+  async findOne(id: string, userId: string) {
     const account = await this.prisma.user_accounts.findFirst({
       where: { id, user_id: userId },
       include: { banks: true, account_types: true, cards: true },
@@ -33,7 +33,7 @@ export class UserAccountsService {
     return { account: this.mapAccount(account) };
   }
 
-  async create(userId: bigint, data: any) {
+  async create(userId: string, data: any) {
     const account = await this.prisma.user_accounts.create({
       data: {
         id: randomUUID(),
@@ -61,7 +61,7 @@ export class UserAccountsService {
     return { message: 'Cuenta creada exitosamente.', account: this.mapAccount(account) };
   }
 
-  async update(id: string, userId: bigint, data: any) {
+  async update(id: string, userId: string, data: any) {
     const existing = await this.prisma.user_accounts.findFirst({ where: { id, user_id: userId }});
     if (!existing) throw new NotFoundException('Account not found');
 
@@ -93,7 +93,7 @@ export class UserAccountsService {
     return { message: 'Cuenta actualizada exitosamente.', account: this.mapAccount(account) };
   }
 
-  async remove(id: string, userId: bigint) {
+  async remove(id: string, userId: string) {
     const existing = await this.prisma.user_accounts.findFirst({ where: { id, user_id: userId }});
     if (!existing) throw new NotFoundException('Account not found');
     

@@ -1,15 +1,17 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { EncryptionService } from './encryption.service';
 export declare class AuthService {
     private prisma;
     private jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
+    private encryptionService;
+    constructor(prisma: PrismaService, jwtService: JwtService, encryptionService: EncryptionService);
     register(data: any): Promise<{
         user: {
             id: string;
             name: string;
             email: string;
-            rut: string | null;
+            rut: any;
         };
         token: string;
     }>;
@@ -22,13 +24,13 @@ export declare class AuthService {
         };
         token: string;
     }>;
-    updateProfile(userId: bigint, data: any): Promise<{
+    updateProfile(userId: string, data: any): Promise<{
         id: string;
         name: string;
         email: string;
         rut: string | null;
     }>;
-    updatePassword(userId: bigint, data: any): Promise<{
+    updatePassword(userId: string, data: any): Promise<{
         message: string;
     }>;
 }

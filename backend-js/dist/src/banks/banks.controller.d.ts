@@ -5,7 +5,13 @@ export declare class BanksController {
     findAll(): Promise<{
         id: string;
         name: string;
+        created_at: Date | null;
+        updated_at: Date | null;
         logo: string | null;
+    }[]>;
+    findAccountTypes(id: string): Promise<{
+        id: string;
+        name: string;
         created_at: Date | null;
         updated_at: Date | null;
     }[]>;

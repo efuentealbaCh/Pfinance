@@ -42,6 +42,33 @@ async function main() {
             create: { ...type, created_at: new Date(), updated_at: new Date() },
         });
     }
+    const bankAccountLinks = {
+        'BancoEstado': ['Cuenta Vista / RUT', 'Cuenta Corriente', 'Cuenta de Ahorro'],
+        'Banco Santander': ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito'],
+        'Banco de Chile': ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'],
+        'Banco de Crédito e Inversiones (BCI)': ['Cuenta Corriente', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+        'Tenpo (Prepago/Digital)': ['Cuenta Prepago'],
+        'Mercado Pago (Prepago/Digital)': ['Cuenta Prepago'],
+        'Banco Falabella': ['Cuenta Corriente', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+    };
+    const dbBanks = await prisma.banks.findMany();
+    const dbAccountTypes = await prisma.account_types.findMany();
+    for (const b of dbBanks) {
+        const supportedTypes = bankAccountLinks[b.name] || ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'];
+        for (const st of supportedTypes) {
+            const type = dbAccountTypes.find(t => t.name === st);
+            if (type) {
+                const exists = await prisma.bank_account_types.findUnique({
+                    where: { bank_id_account_type_id: { bank_id: b.id, account_type_id: type.id } }
+                });
+                if (!exists) {
+                    await prisma.bank_account_types.create({
+                        data: { bank_id: b.id, account_type_id: type.id }
+                    });
+                }
+            }
+        }
+    }
     const categories = [
         { name: 'Alimentación', icon: '🛒', color: '#FF6B6B' },
         { name: 'Transporte', icon: '🚗', color: '#4ECDC4' },

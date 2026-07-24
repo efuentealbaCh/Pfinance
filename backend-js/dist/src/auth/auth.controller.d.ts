@@ -7,7 +7,7 @@ export declare class AuthController {
             id: string;
             name: string;
             email: string;
-            rut: string | null;
+            rut: any;
         };
         token: string;
     }>;

@@ -31,7 +31,8 @@ async function main() {
 
   const accountTypes = [
     { id: uuidv4(), name: 'Cuenta Corriente' },
-    { id: uuidv4(), name: 'Cuenta Vista / RUT' },
+    { id: uuidv4(), name: 'Cuenta Vista' },
+    { id: uuidv4(), name: 'Cuenta RUT' },
     { id: uuidv4(), name: 'Cuenta de Ahorro' },
     { id: uuidv4(), name: 'Tarjeta de Crédito' },
     { id: uuidv4(), name: 'Línea de Crédito' },
@@ -44,6 +45,37 @@ async function main() {
       update: {},
       create: { ...type, created_at: new Date(), updated_at: new Date() },
     });
+  }
+
+  // Link banks and account types
+  const bankAccountLinks: Record<string, string[]> = {
+    'BancoEstado': ['Cuenta RUT', 'Cuenta Vista', 'Cuenta Corriente', 'Cuenta de Ahorro'],
+    'Banco Santander': ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito'],
+    'Banco de Chile': ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'],
+    'Banco de Crédito e Inversiones (BCI)': ['Cuenta Corriente', 'Cuenta Vista', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+    'Tenpo (Prepago/Digital)': ['Cuenta Prepago'],
+    'Mercado Pago (Prepago/Digital)': ['Cuenta Prepago'],
+    'Banco Falabella': ['Cuenta Corriente', 'Cuenta Vista', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+  };
+
+  const dbBanks = await prisma.banks.findMany();
+  const dbAccountTypes = await prisma.account_types.findMany();
+
+  for (const b of dbBanks) {
+    const supportedTypes = bankAccountLinks[b.name] || ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'];
+    for (const st of supportedTypes) {
+      const type = dbAccountTypes.find(t => t.name === st);
+      if (type) {
+        const exists = await prisma.bank_account_types.findUnique({
+          where: { bank_id_account_type_id: { bank_id: b.id, account_type_id: type.id } }
+        });
+        if (!exists) {
+          await prisma.bank_account_types.create({
+            data: { bank_id: b.id, account_type_id: type.id }
+          });
+        }
+      }
+    }
   }
 
   const categories = [
@@ -64,24 +96,29 @@ async function main() {
     { name: 'Regalos',            icon: '🎁', color: '#E17055' },
     { name: 'Ahorros',            icon: '🏦', color: '#2ED573' },
     { name: 'Sueldo',             icon: '💼', color: '#00B894' },
-    { name: 'Freelance',          icon: '🧑‍💻', color: '#00CEC9' },
-    { name: 'Inversiones',        icon: '📈', color: '#0984E3' },
-    { name: 'Ventas',             icon: '🏷️', color: '#FDCB6E' },
-    { name: 'Otros ingresos',     icon: '💵', color: '#55EFC4' },
-    { name: 'Otros',              icon: '📦', color: '#B2BEC3' },
+    { name: 'Ventas y negocios',  icon: '📈', color: '#10AC84' },
+    { name: 'Inversiones',        icon: '🪙', color: '#F1C40F' },
+    { name: 'Otros ingresos',     icon: '💰', color: '#2ECC71' },
+    { name: 'Otros gastos',       icon: '📦', color: '#95A5A6' }
   ];
 
   for (const cat of categories) {
-    // There's no unique constraint on categories.name in the schema, but we can findFirst
-    const existing = await prisma.categories.findFirst({ where: { name: cat.name } });
-    if (!existing) {
+    const existing = await prisma.categories.findFirst({
+      where: { name: cat.name },
+    });
+    if (existing) {
+      await prisma.categories.update({
+        where: { id: existing.id },
+        data: { icon: cat.icon, color: cat.color, updated_at: new Date() },
+      });
+    } else {
       await prisma.categories.create({
-        data: { id: uuidv4(), ...cat, created_at: new Date(), updated_at: new Date() },
+        data: { id: uuidv4(), name: cat.name, icon: cat.icon, color: cat.color, created_at: new Date(), updated_at: new Date() },
       });
     }
   }
 
-  console.log('Seed executed successfully.');
+  console.log('Seeding completed successfully!');
 }
 
 main()

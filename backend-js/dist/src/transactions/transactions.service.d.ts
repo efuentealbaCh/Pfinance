@@ -3,23 +3,23 @@ export declare class TransactionsService {
     private prisma;
     constructor(prisma: PrismaService);
     private mapTransaction;
-    findAll(userId: bigint, filters: any): Promise<{
+    findAll(userId: string, filters: any): Promise<{
         data: any[];
     }>;
-    findOne(id: string, userId: bigint): Promise<{
+    findOne(id: string, userId: string): Promise<{
         transaction: any;
     }>;
-    create(userId: bigint, data: any, reqMetadata: any): Promise<{
+    create(userId: string, data: any, reqMetadata: any): Promise<{
         message: string;
         transaction: any;
         warnings: string[];
     }>;
-    update(id: string, userId: bigint, data: any, reqMetadata: any): Promise<{
+    update(id: string, userId: string, data: any, reqMetadata: any): Promise<{
         message: string;
         transaction: any;
         warnings: string[];
     }>;
-    remove(id: string, userId: bigint, reqMetadata: any): Promise<{
+    remove(id: string, userId: string, reqMetadata: any): Promise<{
         message: string;
     }>;
     private logAction;

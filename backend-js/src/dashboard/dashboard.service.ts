@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getSummary(userId: bigint, filters: any) {
+  async getSummary(userId: string, filters: any) {
     const whereTransactions: any = { user_id: userId };
     if (filters.user_account_id) whereTransactions.user_account_id = filters.user_account_id;
     if (filters.date_from || filters.date_to) {

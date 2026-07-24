@@ -8,28 +8,20 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 
 - Registro e inicio de sesión seguro con JWT (JSON Web Tokens).
 - Gestión de perfil (actualización de datos personales y **RUT** como identificador único).
+- **Seguridad de Datos Sensibles**: El RUT se almacena de forma encriptada (AES-256) en la base de datos para proteger la identidad del usuario.
 - Cambio de contraseña encriptada (bcrypt).
 - Protección de rutas tanto en el Frontend como en el Backend.
-
-### 📊 Panel de Control (Dashboard)
-
-- Resumen visual de tu estado financiero (Balance total, Ingresos, Gastos).
-- Gráficos interactivos generados con Recharts para analizar tus movimientos a lo largo del tiempo.
-- Filtros rápidos por periodo de tiempo.
-
-### 💸 Gestión de Transacciones
-
-- Registro detallado de **Ingresos**, **Gastos** y **Transferencias** entre cuentas.
-- Categorización de movimientos con iconos personalizados.
-- Asignación de transacciones a cuentas bancarias específicas.
-- Historial completo con filtros avanzados (por fecha, tipo, categoría, cuenta y monto).
 
 ### 🏦 Cuentas, Tarjetas y Categorías
 - **Nueva Arquitectura Financiera**: Separación real de Cuentas Bancarias y Tarjetas (Débito/Crédito) como medios de pago.
 - Catálogo de Bancos oficiales chilenos integrados con logos dinámicos (Clearbit API).
+- **Soporte Multi-Cuenta Robusto**: Relación detallada entre Bancos y Tipos de Cuentas (`bank_account_types`) lo que permite un control granular de qué cuentas ofrece cada banco (Vista, Corriente, Ahorro, etc).
 - Creación guiada de cuentas (Wizard / Stepper) para vincular múltiples tarjetas a una misma cuenta bancaria.
 - Opción rápida de "Copiar Datos" para transferencias con un clic.
 - Categorías personalizables para organizar detalladamente en qué gastas tu dinero.
+
+### 🏗️ Arquitectura de Base de Datos
+- **Identificadores Universales (UUID)**: La aplicación utiliza UUID de forma nativa para todas las entidades clave. Esto mejora la seguridad, previene la enumeración de IDs, y facilita la sincronización distribuida en comparación con los IDs numéricos secuenciales tradicionales.
 
 ### 🎯 Metas de Ahorro
 
@@ -76,85 +68,46 @@ Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a toma
 - [NestJS](https://nestjs.com/) (Framework Node.js estructurado y escalable)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Prisma ORM](https://www.prisma.io/) (Interacción con base de datos)
-- [PostgreSQL](https://www.postgresql.org/) (Base de datos alojada en Supabase)
+- [PostgreSQL](https://www.postgresql.org/) (Base de datos alojada en Supabase o Local)
 
 ---
 
-## 🐳 Despliegue con Docker (Recomendado)
+## 🐳 Proceso de Instalación: Despliegue con Docker (Recomendado)
 
-Pfinance está preparado para ser desplegado fácilmente utilizando contenedores. A continuación, te mostramos cómo levantar toda la arquitectura con **Docker Compose**.
+Pfinance está preparado para ser desplegado fácilmente utilizando contenedores. A continuación, te mostramos cómo levantar toda la arquitectura basándose en los archivos actuales.
 
 ### 1. Requisitos
 
 - [Docker](https://www.docker.com/) y [Docker Compose](https://docs.docker.com/compose/) instalados en tu máquina.
 
-### 2. Archivo `docker-compose.yml`
+### 2. Levantar los contenedores
 
-En la raíz del proyecto, asegúrate de tener un archivo `docker-compose.yml` similar a este:
-
-```yaml
-version: "3.8"
-
-services:
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: pfinance
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  backend:
-    build:
-      context: ./backend-js
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:mysecretpassword@db:5432/pfinance
-      - JWT_SECRET=tu_jwt_secret_super_seguro
-      - PORT=3000
-    depends_on:
-      - db
-    command: sh -c "npx prisma migrate deploy && npm run start:prod"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: http://localhost:3000/api
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-
-volumes:
-  pgdata:
-```
-
-_(Nota: Para este setup, debes asegurarte de tener un `Dockerfile` en la carpeta `/frontend` usando Nginx y otro en `/backend-js` para construir NestJS)._
-
-### 3. Levantar los contenedores
-
-Simplemente ejecuta en la raíz del proyecto:
+En la raíz del proyecto, asegúrate de que el archivo `docker-compose.yml` esté presente. Simplemente ejecuta:
 
 ```bash
 docker-compose up -d --build
 ```
 
+Esto descargará las imágenes necesarias, construirá el Backend y el Frontend, y aprovisionará una base de datos local lista para ser utilizada.
+
+### 3. Migraciones y Base de Datos (Opcional si es la primera vez)
+Una vez que el backend esté arriba, si necesitas aplicar o resetear la base de datos (con datos de prueba, bancos y tipos de cuenta), ejecuta el siguiente comando:
+
+```bash
+docker exec pfinance_backend_js npm run prisma:reset
+```
+
 ¡Listo!
 
-- Tu **Frontend** estará corriendo en: `http://localhost`
+- Tu **Frontend** estará corriendo en: `http://localhost:5173`
 - Tu **Backend** estará corriendo en: `http://localhost:3000`
-- Tu **Base de datos** PostgreSQL estará aislada y configurada.
+- Tu **Base de datos** PostgreSQL estará escuchando en el puerto `5432`.
 
 ---
 
-## 🚀 Instalación y Despliegue Local (Sin Docker)
+## 🚀 Proceso de Instalación Local (Sin Docker)
+
+Si prefieres ejecutar el proyecto directamente en tu entorno (ideal para desarrollo intensivo), sigue estos pasos.
 
 ### Requisitos Previos
 - Node.js (v18 o superior)
@@ -170,8 +123,9 @@ Crea un archivo `.env` en `backend-js/` basándote en un posible `.env.example`:
 DATABASE_URL="postgresql://usuario:password@localhost:5432/pfinance"
 JWT_SECRET="tu_super_secreto_aqui"
 PORT=3000
+ENCRYPTION_KEY="una_llave_de_32_caracteres_secur" # Llave AES-256 para RUT
 ```
-Aplica las migraciones de Prisma e inicia el servidor:
+Aplica las migraciones de Prisma y rellena la base de datos, luego inicia el servidor:
 ```bash
 npx prisma migrate dev
 npm run start:dev

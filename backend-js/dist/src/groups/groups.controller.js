@@ -43,7 +43,7 @@ let GroupsController = class GroupsController {
         return this.groupsService.rejectInvitation(id, req.user.id);
     }
     removeMember(req, id, userId) {
-        return this.groupsService.removeMember(id, BigInt(userId), req.user.id);
+        return this.groupsService.removeMember(id, userId, req.user.id);
     }
 };
 exports.GroupsController = GroupsController;
