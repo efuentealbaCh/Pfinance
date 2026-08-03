@@ -8,7 +8,7 @@ const PDFDocument = require('pdfkit');
 export class ExportService {
   constructor(private prisma: PrismaService) {}
 
-  async exportTransactions(userId: bigint, filters: any, res: any) {
+  async exportTransactions(userId: string, filters: any, res: any) {
     if (!filters.format || !['excel', 'pdf'].includes(filters.format)) {
       throw new BadRequestException('Formato inválido. Use "excel" o "pdf".');
     }

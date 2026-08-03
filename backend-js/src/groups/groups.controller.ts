@@ -44,6 +44,6 @@ export class GroupsController {
 
   @Delete(':id/members/:userId')
   removeMember(@Request() req: any, @Param('id') id: string, @Param('userId') userId: string) {
-    return this.groupsService.removeMember(id, BigInt(userId), req.user.id);
+    return this.groupsService.removeMember(id, userId, req.user.id);
   }
 }

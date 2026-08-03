@@ -10,4 +10,14 @@ export class BanksService {
       orderBy: { name: 'asc' },
     });
   }
+
+  async findAccountTypesByBankId(bankId: string) {
+    const bankAccountTypes = await this.prisma.bank_account_types.findMany({
+      where: { bank_id: bankId },
+      include: {
+        account_types: true,
+      },
+    });
+    return bankAccountTypes.map((bat) => bat.account_types);
+  }
 }

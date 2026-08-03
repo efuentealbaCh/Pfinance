@@ -5,13 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SharedDebtsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(groupId: string, userId: bigint, data: any) {
+  async create(groupId: string, userId: string, data: any) {
     const sum = data.splits.reduce((acc: number, split: any) => acc + Number(split.percentage), 0);
     if (Math.round(sum * 100) / 100 !== 100.00) {
       throw new UnprocessableEntityException('Percentages must sum to 100.');
     }
 
-    const gId = BigInt(groupId);
+    const gId = groupId;
 
     const groupMembership = await this.prisma.group_user.findFirst({
       where: { group_id: gId, user_id: userId }
@@ -37,7 +37,7 @@ export class SharedDebtsService {
           await tx.shared_debt_splits.create({
             data: {
               shared_debt_id: created.id,
-              user_id: BigInt(split.user_id),
+              user_id: split.user_id,
               percentage: split.percentage,
               amount_owed,
               is_paid: false,
@@ -67,8 +67,8 @@ export class SharedDebtsService {
     return debt;
   }
 
-  async pay(debtId: string, userId: bigint) {
-    const dId = BigInt(debtId);
+  async pay(debtId: string, userId: string) {
+    const dId = debtId;
     const split = await this.prisma.shared_debt_splits.findFirst({
       where: { shared_debt_id: dId, user_id: userId }
     });

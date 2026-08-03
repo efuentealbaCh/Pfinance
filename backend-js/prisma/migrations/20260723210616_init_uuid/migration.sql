@@ -22,7 +22,7 @@ CREATE TABLE "banks" (
 -- CreateTable
 CREATE TABLE "budgets" (
     "id" UUID NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "user_id" UUID NOT NULL,
     "category_id" UUID NOT NULL,
     "amount" DECIMAL(15,2) NOT NULL,
     "period" VARCHAR(255) NOT NULL DEFAULT 'monthly',
@@ -64,7 +64,7 @@ CREATE TABLE "categories" (
 
 -- CreateTable
 CREATE TABLE "failed_jobs" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "uuid" VARCHAR(255) NOT NULL,
     "connection" TEXT NOT NULL,
     "queue" TEXT NOT NULL,
@@ -77,9 +77,9 @@ CREATE TABLE "failed_jobs" (
 
 -- CreateTable
 CREATE TABLE "group_user" (
-    "id" BIGSERIAL NOT NULL,
-    "group_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "id" UUID NOT NULL,
+    "group_id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
     "status" VARCHAR(255) NOT NULL DEFAULT 'pending',
     "role" VARCHAR(255) NOT NULL DEFAULT 'member',
     "created_at" TIMESTAMP(0),
@@ -90,10 +90,10 @@ CREATE TABLE "group_user" (
 
 -- CreateTable
 CREATE TABLE "groups" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "description" TEXT,
-    "created_by" BIGINT NOT NULL,
+    "created_by" UUID NOT NULL,
     "created_at" TIMESTAMP(0),
     "updated_at" TIMESTAMP(0),
 
@@ -118,7 +118,7 @@ CREATE TABLE "job_batches" (
 
 -- CreateTable
 CREATE TABLE "jobs" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "queue" VARCHAR(255) NOT NULL,
     "payload" TEXT NOT NULL,
     "attempts" SMALLINT NOT NULL,
@@ -149,9 +149,9 @@ CREATE TABLE "password_reset_tokens" (
 
 -- CreateTable
 CREATE TABLE "personal_access_tokens" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "tokenable_type" VARCHAR(255) NOT NULL,
-    "tokenable_id" BIGINT NOT NULL,
+    "tokenable_id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "token" VARCHAR(64) NOT NULL,
     "abilities" TEXT,
@@ -165,9 +165,9 @@ CREATE TABLE "personal_access_tokens" (
 
 -- CreateTable
 CREATE TABLE "push_subscriptions" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "subscribable_type" VARCHAR(255) NOT NULL,
-    "subscribable_id" BIGINT NOT NULL,
+    "subscribable_id" UUID NOT NULL,
     "endpoint" VARCHAR(500) NOT NULL,
     "public_key" VARCHAR(255),
     "auth_token" VARCHAR(255),
@@ -181,7 +181,7 @@ CREATE TABLE "push_subscriptions" (
 -- CreateTable
 CREATE TABLE "savings_goals" (
     "id" UUID NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "user_id" UUID NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "target_amount" DECIMAL(15,2) NOT NULL,
     "current_amount" DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -197,7 +197,7 @@ CREATE TABLE "savings_goals" (
 -- CreateTable
 CREATE TABLE "sessions" (
     "id" VARCHAR(255) NOT NULL,
-    "user_id" BIGINT,
+    "user_id" UUID,
     "ip_address" VARCHAR(45),
     "user_agent" TEXT,
     "payload" TEXT NOT NULL,
@@ -208,9 +208,9 @@ CREATE TABLE "sessions" (
 
 -- CreateTable
 CREATE TABLE "shared_debt_splits" (
-    "id" BIGSERIAL NOT NULL,
-    "shared_debt_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "id" UUID NOT NULL,
+    "shared_debt_id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
     "percentage" DECIMAL(5,2) NOT NULL,
     "amount_owed" DECIMAL(15,2) NOT NULL,
     "is_paid" BOOLEAN NOT NULL DEFAULT false,
@@ -222,9 +222,9 @@ CREATE TABLE "shared_debt_splits" (
 
 -- CreateTable
 CREATE TABLE "shared_debts" (
-    "id" BIGSERIAL NOT NULL,
-    "group_id" BIGINT NOT NULL,
-    "created_by" BIGINT NOT NULL,
+    "id" UUID NOT NULL,
+    "group_id" UUID NOT NULL,
+    "created_by" UUID NOT NULL,
     "title" VARCHAR(255) NOT NULL,
     "amount" DECIMAL(15,2) NOT NULL,
     "date" DATE NOT NULL,
@@ -239,7 +239,7 @@ CREATE TABLE "shared_debts" (
 CREATE TABLE "transaction_logs" (
     "id" UUID NOT NULL,
     "transaction_id" UUID NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "user_id" UUID NOT NULL,
     "action" VARCHAR(255) NOT NULL,
     "payload_before" JSONB,
     "payload_after" JSONB,
@@ -253,7 +253,7 @@ CREATE TABLE "transaction_logs" (
 -- CreateTable
 CREATE TABLE "transactions" (
     "id" UUID NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "user_id" UUID NOT NULL,
     "user_account_id" UUID NOT NULL,
     "target_account_id" UUID,
     "category_id" UUID,
@@ -272,7 +272,7 @@ CREATE TABLE "transactions" (
 -- CreateTable
 CREATE TABLE "user_accounts" (
     "id" UUID NOT NULL,
-    "user_id" BIGINT NOT NULL,
+    "user_id" UUID NOT NULL,
     "bank_id" UUID NOT NULL,
     "account_type_id" UUID NOT NULL,
     "identifier" VARCHAR(255),
@@ -281,6 +281,14 @@ CREATE TABLE "user_accounts" (
     "updated_at" TIMESTAMP(0),
 
     CONSTRAINT "user_accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "bank_account_types" (
+    "bank_id" UUID NOT NULL,
+    "account_type_id" UUID NOT NULL,
+
+    CONSTRAINT "bank_account_types_pkey" PRIMARY KEY ("bank_id","account_type_id")
 );
 
 -- CreateTable
@@ -299,9 +307,9 @@ CREATE TABLE "cards" (
 
 -- CreateTable
 CREATE TABLE "users" (
-    "id" BIGSERIAL NOT NULL,
+    "id" UUID NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "rut" VARCHAR(20),
+    "rut" VARCHAR(255),
     "email" VARCHAR(255) NOT NULL,
     "email_verified_at" TIMESTAMP(0),
     "password" VARCHAR(255) NOT NULL,
@@ -422,6 +430,12 @@ ALTER TABLE "user_accounts" ADD CONSTRAINT "user_accounts_bank_id_foreign" FOREI
 
 -- AddForeignKey
 ALTER TABLE "user_accounts" ADD CONSTRAINT "user_accounts_user_id_foreign" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "bank_account_types" ADD CONSTRAINT "bank_account_types_bank_id_fkey" FOREIGN KEY ("bank_id") REFERENCES "banks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bank_account_types" ADD CONSTRAINT "bank_account_types_account_type_id_fkey" FOREIGN KEY ("account_type_id") REFERENCES "account_types"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "cards" ADD CONSTRAINT "cards_user_account_id_fkey" FOREIGN KEY ("user_account_id") REFERENCES "user_accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -3,15 +3,15 @@ export declare class GroupsController {
     private readonly groupsService;
     constructor(groupsService: GroupsService);
     create(req: any, data: any): Promise<{
-        id: bigint;
+        id: string;
         name: string;
         created_at: Date | null;
         updated_at: Date | null;
         description: string | null;
-        created_by: bigint;
+        created_by: string;
     }>;
     getInvitations(req: any): Promise<{
-        id: bigint;
+        id: string;
         name: string;
         description: string | null;
         invited_at: Date | null;

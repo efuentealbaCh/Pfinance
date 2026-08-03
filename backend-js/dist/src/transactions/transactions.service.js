@@ -128,14 +128,14 @@ let TransactionsService = class TransactionsService {
         });
         if (data.is_shared && data.group_id && data.type === 'expense') {
             const groupMembers = await this.prisma.group_user.findMany({
-                where: { group_id: BigInt(data.group_id) }
+                where: { group_id: data.group_id }
             });
             if (groupMembers.length > 0) {
                 const splitAmount = Number(data.amount) / groupMembers.length;
                 const percentage = 100 / groupMembers.length;
                 await this.prisma.shared_debts.create({
                     data: {
-                        group_id: BigInt(data.group_id),
+                        group_id: data.group_id,
                         created_by: userId,
                         title: data.description || 'Gasto compartido',
                         amount: data.amount,

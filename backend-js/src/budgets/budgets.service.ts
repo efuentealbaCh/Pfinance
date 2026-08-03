@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 export class BudgetsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: bigint) {
+  async findAll(userId: string) {
     const budgets = await this.prisma.budgets.findMany({
       where: { user_id: userId },
       include: { categories: true },
@@ -17,7 +17,7 @@ export class BudgetsService {
     return { budgets: enriched };
   }
 
-  async findOne(id: string, userId: bigint) {
+  async findOne(id: string, userId: string) {
     const budget = await this.prisma.budgets.findFirst({
       where: { id, user_id: userId },
       include: { categories: true },
@@ -26,7 +26,7 @@ export class BudgetsService {
     return { budget: await this.enrichBudgetWithSpent(budget, userId) };
   }
 
-  async create(userId: bigint, data: any) {
+  async create(userId: string, data: any) {
     const budget = await this.prisma.budgets.create({
       data: {
         id: randomUUID(),
@@ -42,7 +42,7 @@ export class BudgetsService {
     return { message: 'Presupuesto creado exitosamente.', budget: await this.enrichBudgetWithSpent(budget, userId) };
   }
 
-  async update(id: string, userId: bigint, data: any) {
+  async update(id: string, userId: string, data: any) {
     const existing = await this.prisma.budgets.findFirst({ where: { id, user_id: userId } });
     if (!existing) throw new NotFoundException('Budget not found');
 
@@ -59,7 +59,7 @@ export class BudgetsService {
     return { message: 'Presupuesto actualizado exitosamente.', budget: await this.enrichBudgetWithSpent(budget, userId) };
   }
 
-  async remove(id: string, userId: bigint) {
+  async remove(id: string, userId: string) {
     const existing = await this.prisma.budgets.findFirst({ where: { id, user_id: userId } });
     if (!existing) throw new NotFoundException('Budget not found');
 
@@ -67,7 +67,7 @@ export class BudgetsService {
     return { message: 'Presupuesto eliminado exitosamente.' };
   }
 
-  private async enrichBudgetWithSpent(budget: any, userId: bigint) {
+  private async enrichBudgetWithSpent(budget: any, userId: string) {
     const [dateFrom, dateTo] = this.getPeriodRange(budget.period);
 
     const spentAgg = await this.prisma.transactions.aggregate({

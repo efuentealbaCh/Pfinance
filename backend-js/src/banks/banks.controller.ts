@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { BanksService } from './banks.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -10,5 +10,10 @@ export class BanksController {
   @Get()
   findAll() {
     return this.banksService.findAll();
+  }
+
+  @Get(':id/account-types')
+  findAccountTypes(@Param('id') id: string) {
+    return this.banksService.findAccountTypesByBankId(id);
   }
 }

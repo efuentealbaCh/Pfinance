@@ -47,12 +47,15 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
+const encryption_service_1 = require("./encryption.service");
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    constructor(prisma, jwtService) {
+    encryptionService;
+    constructor(prisma, jwtService, encryptionService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.encryptionService = encryptionService;
     }
     async register(data) {
         const existingUser = await this.prisma.users.findUnique({
@@ -61,9 +64,11 @@ let AuthService = class AuthService {
         if (existingUser) {
             throw new common_1.BadRequestException('El correo ya está en uso');
         }
+        let encryptedRut = undefined;
         if (data.rut) {
+            encryptedRut = this.encryptionService.encrypt(data.rut);
             const existingRut = await this.prisma.users.findUnique({
-                where: { rut: data.rut },
+                where: { rut: encryptedRut },
             });
             if (existingRut) {
                 throw new common_1.BadRequestException('El RUT ya está registrado');
@@ -74,7 +79,7 @@ let AuthService = class AuthService {
             data: {
                 name: data.name,
                 email: data.email,
-                rut: data.rut,
+                rut: encryptedRut,
                 password: hashedPassword,
                 created_at: new Date(),
                 updated_at: new Date(),
@@ -82,7 +87,7 @@ let AuthService = class AuthService {
         });
         const payload = { email: user.email, sub: user.id };
         return {
-            user: { id: user.id.toString(), name: user.name, email: user.email, rut: user.rut },
+            user: { id: user.id, name: user.name, email: user.email, rut: data.rut || null },
             token: this.jwtService.sign(payload),
         };
     }
@@ -99,21 +104,25 @@ let AuthService = class AuthService {
         }
         const payload = { email: user.email, sub: user.id };
         return {
-            user: { id: user.id.toString(), name: user.name, email: user.email, rut: user.rut },
+            user: { id: user.id, name: user.name, email: user.email, rut: this.encryptionService.decrypt(user.rut) },
             token: this.jwtService.sign(payload),
         };
     }
     async updateProfile(userId, data) {
+        let encryptedRut = undefined;
+        if (data.rut !== undefined) {
+            encryptedRut = data.rut ? this.encryptionService.encrypt(data.rut) : null;
+        }
         const updatedUser = await this.prisma.users.update({
             where: { id: userId },
             data: {
                 name: data.name,
                 email: data.email,
-                rut: data.rut,
+                ...(encryptedRut !== undefined && { rut: encryptedRut }),
                 updated_at: new Date(),
             },
         });
-        return { id: updatedUser.id.toString(), name: updatedUser.name, email: updatedUser.email, rut: updatedUser.rut };
+        return { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, rut: this.encryptionService.decrypt(updatedUser.rut) };
     }
     async updatePassword(userId, data) {
         const user = await this.prisma.users.findUnique({ where: { id: userId } });
@@ -134,6 +143,7 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        encryption_service_1.EncryptionService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

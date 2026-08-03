@@ -62,7 +62,7 @@ let GroupsService = class GroupsService {
         return groups.map(g => this.mapGroup(g));
     }
     async findOne(id, userId) {
-        const groupId = BigInt(id);
+        const groupId = id;
         const group = await this.prisma.groups.findFirst({
             where: {
                 id: groupId,
@@ -102,7 +102,7 @@ let GroupsService = class GroupsService {
         return group;
     }
     async removeMember(groupId, targetUserId, requesterId) {
-        const gId = BigInt(groupId);
+        const gId = groupId;
         const requesterMembership = await this.prisma.group_user.findFirst({
             where: { group_id: gId, user_id: requesterId, role: 'admin' },
         });
@@ -118,7 +118,7 @@ let GroupsService = class GroupsService {
         return { message: 'Miembro eliminado correctamente.' };
     }
     async inviteUser(groupId, email, requesterId) {
-        const gId = BigInt(groupId);
+        const gId = groupId;
         const requesterMembership = await this.prisma.group_user.findFirst({
             where: { group_id: gId, user_id: requesterId, role: 'admin' },
         });
@@ -148,7 +148,7 @@ let GroupsService = class GroupsService {
         return { message: 'Invitación enviada.' };
     }
     async acceptInvitation(groupId, userId) {
-        const gId = BigInt(groupId);
+        const gId = groupId;
         const membership = await this.prisma.group_user.findFirst({
             where: { group_id: gId, user_id: userId, status: 'pending' },
         });
@@ -161,7 +161,7 @@ let GroupsService = class GroupsService {
         return { message: 'Invitación aceptada.' };
     }
     async rejectInvitation(groupId, userId) {
-        const gId = BigInt(groupId);
+        const gId = groupId;
         const membership = await this.prisma.group_user.findFirst({
             where: { group_id: gId, user_id: userId, status: 'pending' },
         });

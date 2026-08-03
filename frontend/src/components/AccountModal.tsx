@@ -13,9 +13,10 @@ import {
   ActionIcon,
   Card,
   Badge,
+  Loader,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertCircle, IconLock } from '@tabler/icons-react';
 import api from '../api/axios';
 
 interface Bank {
@@ -58,9 +59,11 @@ export default function AccountModal({
 }: AccountModalProps) {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([]);
+  const [loadingAccountTypes, setLoadingAccountTypes] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState(0);
+  const [cardsError, setCardsError] = useState('');
 
   const form = useForm<AccountFormData>({
     initialValues: {
@@ -82,24 +85,23 @@ export default function AccountModal({
     },
   });
 
+  // Load banks when modal opens
   useEffect(() => {
     if (opened) {
-      const fetchCatalogs = async () => {
+      const fetchBanks = async () => {
         try {
-          const [banksRes, typesRes] = await Promise.all([
-            api.get('/banks'),
-            api.get('/account-types'),
-          ]);
+          const banksRes = await api.get('/banks');
           setBanks(banksRes.data);
-          setAccountTypes(typesRes.data);
         } catch {
-          setError('Error al cargar los catálogos.');
+          setError('Error al cargar los bancos.');
         }
       };
-      fetchCatalogs();
+      fetchBanks();
       form.reset();
       setActiveStep(0);
       setError('');
+      setCardsError('');
+      setAccountTypes([]);
       if (editData) {
         form.setValues({
           bank_id: editData.bank_id,
@@ -108,12 +110,48 @@ export default function AccountModal({
           balance: editData.balance,
           cards: editData.cards || [],
         });
+        // If editing, load account types for the existing bank
+        if (editData.bank_id) {
+          fetchAccountTypesForBank(editData.bank_id);
+        }
       }
     }
   }, [opened, editData]);
 
+  // Fetch account types when bank changes
+  const fetchAccountTypesForBank = async (bankId: string) => {
+    setLoadingAccountTypes(true);
+    setAccountTypes([]);
+    try {
+      const res = await api.get(`/banks/${bankId}/account-types`);
+      setAccountTypes(res.data);
+    } catch {
+      setError('Error al cargar los tipos de cuenta para este banco.');
+    } finally {
+      setLoadingAccountTypes(false);
+    }
+  };
+
+  const handleBankChange = (value: string | null) => {
+    form.setFieldValue('bank_id', value || '');
+    // Reset account type when bank changes
+    form.setFieldValue('account_type_id', '');
+    setAccountTypes([]);
+
+    if (value) {
+      fetchAccountTypesForBank(value);
+    }
+  };
+
   const handleSubmit = async (values: AccountFormData) => {
+    // Validate at least one card
+    if (values.cards.length === 0) {
+      setCardsError('Debes agregar al menos una tarjeta antes de guardar.');
+      return;
+    }
+
     setError('');
+    setCardsError('');
     setLoading(true);
     try {
       if (editData?.id) {
@@ -133,13 +171,24 @@ export default function AccountModal({
   };
 
   const nextStep = () => {
-    const { hasErrors } = form.validate();
-    if (!hasErrors) {
-      setActiveStep((current) => (current < 1 ? current + 1 : current));
+    if (activeStep === 0) {
+      // Validate only step 1 fields
+      const bankError = form.validateField('bank_id');
+      const typeError = form.validateField('account_type_id');
+      const identifierError = form.validateField('identifier');
+      const balanceError = form.validateField('balance');
+
+      if (bankError.hasError || typeError.hasError || identifierError.hasError || balanceError.hasError) {
+        return;
+      }
     }
+    setActiveStep((current) => (current < 1 ? current + 1 : current));
   };
 
   const prevStep = () => setActiveStep((current) => (current > 0 ? current - 1 : current));
+
+  const isBankSelected = !!form.values.bank_id;
+  const hasCards = form.values.cards.length > 0;
 
   return (
     <Modal
@@ -154,7 +203,7 @@ export default function AccountModal({
         <Stepper.Step label="Cuenta" description="Datos bancarios">
           <Stack mt="md">
             {error && (
-              <Alert color="red" variant="light" radius="md">
+              <Alert color="red" variant="light" radius="md" icon={<IconAlertCircle size={16} />}>
                 {error}
               </Alert>
             )}
@@ -166,18 +215,43 @@ export default function AccountModal({
               required
               searchable
               radius="md"
-              {...form.getInputProps('bank_id')}
+              value={form.values.bank_id || null}
+              onChange={handleBankChange}
+              error={form.errors.bank_id}
             />
 
-            <Select
-              label="Tipo de cuenta"
-              placeholder="Selecciona un tipo"
-              data={accountTypes.map((t) => ({ value: t.id, label: t.name }))}
-              required
-              searchable
-              radius="md"
-              {...form.getInputProps('account_type_id')}
-            />
+            <div style={{ position: 'relative' }}>
+              <Select
+                label="Tipo de cuenta"
+                placeholder={
+                  !isBankSelected
+                    ? '🔒 Primero selecciona un banco'
+                    : loadingAccountTypes
+                    ? 'Cargando tipos de cuenta...'
+                    : accountTypes.length === 0
+                    ? 'No hay tipos de cuenta para este banco'
+                    : 'Selecciona un tipo'
+                }
+                data={accountTypes.map((t) => ({ value: t.id, label: t.name }))}
+                required
+                searchable
+                radius="md"
+                disabled={!isBankSelected || loadingAccountTypes}
+                rightSection={
+                  loadingAccountTypes ? (
+                    <Loader size="xs" />
+                  ) : !isBankSelected ? (
+                    <IconLock size={14} style={{ opacity: 0.5 }} />
+                  ) : undefined
+                }
+                {...form.getInputProps('account_type_id')}
+              />
+              {!isBankSelected && (
+                <Text size="xs" c="dimmed" mt={4}>
+                  Selecciona un banco para ver los tipos de cuenta disponibles.
+                </Text>
+              )}
+            </div>
 
             <TextInput
               label="Número de Cuenta"
@@ -204,9 +278,22 @@ export default function AccountModal({
 
         <Stepper.Step label="Tarjetas" description="Vincular tarjetas">
           <Stack mt="md">
-            <Text size="sm" c="dimmed">
-              Agrega las tarjetas de débito o crédito asociadas a esta cuenta.
-            </Text>
+            <Alert
+              variant="light"
+              color={hasCards ? 'teal' : 'yellow'}
+              radius="md"
+              icon={hasCards ? undefined : <IconAlertCircle size={16} />}
+            >
+              {hasCards
+                ? `${form.values.cards.length} tarjeta(s) vinculada(s). Puedes agregar más o finalizar.`
+                : 'Debes agregar al menos una tarjeta para poder guardar la cuenta.'}
+            </Alert>
+
+            {cardsError && (
+              <Alert color="red" variant="light" radius="md" icon={<IconAlertCircle size={16} />}>
+                {cardsError}
+              </Alert>
+            )}
             
             {form.values.cards.map((card, index) => (
               <Card key={index} withBorder shadow="sm" radius="md" p="sm">
@@ -256,7 +343,10 @@ export default function AccountModal({
               variant="light" 
               color="teal" 
               leftSection={<IconPlus size={16} />} 
-              onClick={() => form.insertListItem('cards', { name: '', type: 'debit', last_four: '', balance: 0 })}
+              onClick={() => {
+                form.insertListItem('cards', { name: '', type: 'debit', last_four: '', balance: 0 });
+                setCardsError('');
+              }}
             >
               Añadir Tarjeta
             </Button>
@@ -273,7 +363,12 @@ export default function AccountModal({
         {activeStep !== 1 ? (
           <Button onClick={nextStep} color="teal">Siguiente</Button>
         ) : (
-          <Button onClick={() => handleSubmit(form.values)} loading={loading} color="teal">
+          <Button
+            onClick={() => handleSubmit(form.values)}
+            loading={loading}
+            color="teal"
+            disabled={!hasCards}
+          >
             Finalizar y Guardar
           </Button>
         )}

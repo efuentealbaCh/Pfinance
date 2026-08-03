@@ -8,12 +8,17 @@ import {
     Group,
     Stack,
     Divider,
+    Alert,
+    Modal,
+    ThemeIcon,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconAlertCircle, IconBuildingBank, IconPlus } from '@tabler/icons-react';
 import { useTransactions, useCatalogs, useDeleteTransaction } from '../api/queries';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
 import ExportModal from '../components/ExportModal';
+import AccountModal from '../components/AccountModal';
 
 interface Transaction {
     id: string;
@@ -59,11 +64,14 @@ export default function TransactionsPage() {
     const [modalOpened, setModalOpened] = useState(false);
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
     const [exportModalOpened, setExportModalOpened] = useState(false);
+    const [noAccountModalOpened, setNoAccountModalOpened] = useState(false);
+    const [accountModalOpened, setAccountModalOpened] = useState(false);
 
     // Queries
-    const { data: catalogs } = useCatalogs();
+    const { data: catalogs, refetch: refetchCatalogs } = useCatalogs();
     const categories = catalogs?.categories || [];
     const accounts = catalogs?.userAccounts || [];
+    const hasAccounts = accounts.length > 0;
 
     const queryParams: Record<string, string> = { page: String(page) };
     if (filters.type) queryParams.type = filters.type;
@@ -146,6 +154,29 @@ export default function TransactionsPage() {
         setPage(1); // Refresh page 1
     };
 
+    const handleNewTransactionClick = () => {
+        if (!hasAccounts) {
+            setNoAccountModalOpened(true);
+        } else {
+            setEditTransaction(null);
+            setModalOpened(true);
+        }
+    };
+
+    const handleCreateAccountFromPrompt = () => {
+        setNoAccountModalOpened(false);
+        setAccountModalOpened(true);
+    };
+
+    const handleAccountCreated = () => {
+        refetchCatalogs();
+        notifications.show({
+            title: 'Cuenta creada',
+            message: '¡Tu cuenta fue registrada! Ahora puedes agregar transacciones.',
+            color: 'teal',
+        });
+    };
+
     // Calcular resumen del listado actual
     const totalIncome = transactions
         .filter((t) => t.type === 'income')
@@ -174,15 +205,37 @@ export default function TransactionsPage() {
                             <Button
                                 color="teal"
                                 radius="md"
-                                onClick={() => {
-                                    setEditTransaction(null);
-                                    setModalOpened(true);
-                                }}
+                                onClick={handleNewTransactionClick}
                             >
                                 ➕ Nueva transacción
                             </Button>
                         </Group>
                     </Group>
+
+                    {/* ─── Alert when no accounts ─────────────────────── */}
+                    {!hasAccounts && (
+                        <Alert
+                            variant="light"
+                            color="yellow"
+                            radius="md"
+                            mb="lg"
+                            icon={<IconAlertCircle size={20} />}
+                            title="Sin cuentas bancarias"
+                        >
+                            <Text size="sm" mb="xs">
+                                No tienes cuentas bancarias registradas. Necesitas al menos una cuenta para poder registrar transacciones.
+                            </Text>
+                            <Button
+                                size="xs"
+                                variant="filled"
+                                color="teal"
+                                leftSection={<IconPlus size={14} />}
+                                onClick={handleCreateAccountFromPrompt}
+                            >
+                                Crear mi primera cuenta
+                            </Button>
+                        </Alert>
+                    )}
 
                     <Stack gap="md">
                         {/* ─── Resumen ──────────────────────────────────── */}
@@ -237,7 +290,43 @@ export default function TransactionsPage() {
                 </Paper>
             </Container>
 
-            {/* ─── Modal ──────────────────────────────────────────── */}
+            {/* ─── Modal: No accounts prompt ─────────────────────── */}
+            <Modal
+                opened={noAccountModalOpened}
+                onClose={() => setNoAccountModalOpened(false)}
+                title="⚠️ No puedes agregar transacciones aún"
+                centered
+                radius="lg"
+                size="sm"
+            >
+                <Stack align="center" gap="md" py="md">
+                    <ThemeIcon size={64} radius="xl" color="yellow" variant="light">
+                        <IconBuildingBank size={32} />
+                    </ThemeIcon>
+                    <Text ta="center" size="sm">
+                        Para registrar una transacción, primero necesitas tener al menos una <strong>cuenta bancaria</strong> registrada con una tarjeta asociada.
+                    </Text>
+                    <Group gap="sm">
+                        <Button
+                            variant="default"
+                            radius="md"
+                            onClick={() => setNoAccountModalOpened(false)}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            color="teal"
+                            radius="md"
+                            leftSection={<IconPlus size={16} />}
+                            onClick={handleCreateAccountFromPrompt}
+                        >
+                            Crear cuenta ahora
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* ─── Modal: Transaction ──────────────────────────────── */}
             <TransactionModal
                 opened={modalOpened}
                 onClose={handleModalClose}
@@ -258,6 +347,13 @@ export default function TransactionsPage() {
                         }
                         : null
                 }
+            />
+
+            {/* ─── Modal: Account (quick create) ──────────────────── */}
+            <AccountModal
+                opened={accountModalOpened}
+                onClose={() => setAccountModalOpened(false)}
+                onSuccess={handleAccountCreated}
             />
 
             <ExportModal 

@@ -9,4 +9,10 @@ export declare class BanksService {
         created_at: Date | null;
         updated_at: Date | null;
     }[]>;
+    findAccountTypesByBankId(bankId: string): Promise<{
+        id: string;
+        name: string;
+        created_at: Date | null;
+        updated_at: Date | null;
+    }[]>;
 }

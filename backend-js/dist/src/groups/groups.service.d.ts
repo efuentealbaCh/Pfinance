@@ -3,30 +3,30 @@ export declare class GroupsService {
     private prisma;
     constructor(prisma: PrismaService);
     private mapGroup;
-    findAll(userId: bigint): Promise<any[]>;
-    findOne(id: string, userId: bigint): Promise<any>;
-    create(userId: bigint, data: any): Promise<{
-        id: bigint;
+    findAll(userId: string): Promise<any[]>;
+    findOne(id: string, userId: string): Promise<any>;
+    create(userId: string, data: any): Promise<{
+        id: string;
         name: string;
         created_at: Date | null;
         updated_at: Date | null;
         description: string | null;
-        created_by: bigint;
+        created_by: string;
     }>;
-    removeMember(groupId: string, targetUserId: bigint, requesterId: bigint): Promise<{
+    removeMember(groupId: string, targetUserId: string, requesterId: string): Promise<{
         message: string;
     }>;
-    inviteUser(groupId: string, email: string, requesterId: bigint): Promise<{
+    inviteUser(groupId: string, email: string, requesterId: string): Promise<{
         message: string;
     }>;
-    acceptInvitation(groupId: string, userId: bigint): Promise<{
+    acceptInvitation(groupId: string, userId: string): Promise<{
         message: string;
     }>;
-    rejectInvitation(groupId: string, userId: bigint): Promise<{
+    rejectInvitation(groupId: string, userId: string): Promise<{
         message: string;
     }>;
-    getInvitations(userId: bigint): Promise<{
-        id: bigint;
+    getInvitations(userId: string): Promise<{
+        id: string;
         name: string;
         description: string | null;
         invited_at: Date | null;
