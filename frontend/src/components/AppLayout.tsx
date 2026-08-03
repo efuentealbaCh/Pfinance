@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   AppShell,
   Group,
@@ -12,28 +12,26 @@ import {
   Tooltip,
   ActionIcon,
   useMantineColorScheme,
-} from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { useAuth } from '../context/AuthContext';
-import { usePushSubscribe, getVapidPublicKey } from '../api/queries';
-import { useEffect } from 'react';
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { useAuth } from "../context/AuthContext";
+import { usePushSubscribe, getVapidPublicKey } from "../api/queries";
 
-// ... (omitted NAV_ITEMS for brevity) ...
 const NAV_ITEMS = [
-  { label: 'Dashboard',      icon: '📊', path: '/dashboard' },
-  { label: 'Transacciones',  icon: '💰', path: '/transactions' },
-  { label: 'Categorías',     icon: '🏷️', path: '/categories' },
-  { label: 'Presupuestos',   icon: '📋', path: '/budgets' },
-  { label: 'Metas',          icon: '🎯', path: '/savings' },
-  { label: 'Grupos',         icon: '👥', path: '/groups' },
-  { label: 'Mi Perfil',      icon: '👤', path: '/profile' },
+  { label: "Dashboard", icon: "📊", path: "/dashboard" },
+  { label: "Transacciones", icon: "💰", path: "/transactions" },
+  { label: "Categorías", icon: "🏷️", path: "/categories" },
+  { label: "Presupuestos", icon: "📋", path: "/budgets" },
+  { label: "Metas", icon: "🎯", path: "/savings" },
+  { label: "Grupos", icon: "👥", path: "/groups" },
+  { label: "Mi Perfil", icon: "👤", path: "/profile" },
 ];
 
 function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
+    .replace(/\-/g, "+")
+    .replace(/_/g, "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -53,27 +51,25 @@ export default function AppLayout() {
   const pushSubscribeMutation = usePushSubscribe();
 
   useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window && user) {
+    if ("serviceWorker" in navigator && "PushManager" in window && user) {
       navigator.serviceWorker.ready.then(async (registration) => {
         try {
           const subscription = await registration.pushManager.getSubscription();
           if (!subscription) {
-            // Subscribe the user
             const vapidPublicKey = await getVapidPublicKey();
             const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
             const newSubscription = await registration.pushManager.subscribe({
               userVisibleOnly: true,
-              applicationServerKey: convertedVapidKey
+              applicationServerKey: convertedVapidKey,
             });
 
             pushSubscribeMutation.mutate(newSubscription);
           } else {
-            // Ya está subscrito, actualizamos en backend por si acaso
             pushSubscribeMutation.mutate(subscription);
           }
         } catch (err) {
-          console.error('Error during push subscription:', err);
+          console.error("Error during push subscription:", err);
         }
       });
     }
@@ -82,30 +78,33 @@ export default function AppLayout() {
   const handleLogout = async () => {
     setLoggingOut(true);
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
+
+  const isDark = colorScheme === "dark";
 
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={{
         width: 250,
-        breakpoint: 'sm',
+        breakpoint: "sm",
         collapsed: { mobile: !opened },
       }}
       padding="md"
       styles={{
         main: {
-          background: 'light-dark(#f8f9fa, linear-gradient(135deg, #0f172a 0%, #1e293b 100%))',
-          minHeight: '100vh',
+          background:
+            "light-dark(#f1f5f9, linear-gradient(135deg, #0b1329 0%, #111827 100%))",
+          minHeight: "100vh",
         },
         header: {
-          backgroundColor: 'light-dark(#ffffff, #0f172a)',
-          borderBottom: '1px solid light-dark(#e9ecef, #1e293b)',
+          backgroundColor: "light-dark(#303132, #0b1329)",
+          borderBottom: "1px solid light-dark(#4a4b4c, #1e293b)",
         },
         navbar: {
-          backgroundColor: 'light-dark(#ffffff, #0f172a)',
-          borderRight: '1px solid light-dark(#e9ecef, #1e293b)',
+          backgroundColor: "light-dark(#303132, #0b1329)",
+          borderRight: "1px solid light-dark(#4a4b4c, #1e293b)",
         },
       }}
     >
@@ -113,12 +112,18 @@ export default function AppLayout() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="light-dark(black, white)" />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+              color="#ffffff"
+            />
             <Text
               size="xl"
               fw={800}
               variant="gradient"
-              gradient={{ from: 'teal', to: 'cyan', deg: 45 }}
+              gradient={{ from: "teal.3", to: "cyan.3", deg: 45 }}
             >
               💸 Pfinance
             </Text>
@@ -129,14 +134,24 @@ export default function AppLayout() {
               size="lg"
               radius="xl"
               onClick={toggleColorScheme}
-              title="Alternar tema oscuro"
+              title="Alternar tema claro/oscuro"
+              style={{
+                color: "#ffffff",
+                borderColor: "rgba(255, 255, 255, 0.15)",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              }}
             >
-              {colorScheme === 'dark' ? '☀️' : '🌙'}
+              {isDark ? "☀️" : "🌙"}
             </ActionIcon>
             <Avatar color="teal" radius="xl" size="sm">
-              {user?.name?.charAt(0).toUpperCase() || '?'}
+              {user?.name?.charAt(0).toUpperCase() || "?"}
             </Avatar>
-            <Text size="sm" c="dimmed" visibleFrom="sm">
+            <Text
+              size="sm"
+              visibleFrom="sm"
+              fw={600}
+              style={{ color: "#e2e8f0" }}
+            >
               {user?.name}
             </Text>
           </Group>
@@ -146,13 +161,13 @@ export default function AppLayout() {
       {/* ─── Sidebar ─────────────────────────────────────── */}
       <AppShell.Navbar p="md">
         <AppShell.Section grow>
-          <Stack gap={4}>
+          <Stack gap={6}>
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={close}
-                style={{ textDecoration: 'none' }}
+                style={{ textDecoration: "none" }}
               >
                 {({ isActive }) => (
                   <UnstyledButton
@@ -161,23 +176,23 @@ export default function AppLayout() {
                     style={{
                       borderRadius: 8,
                       backgroundColor: isActive
-                        ? 'rgba(18, 184, 134, 0.15)'
-                        : 'transparent',
+                        ? "rgba(45, 212, 191, 0.18)"
+                        : "transparent",
                       borderLeft: isActive
-                        ? '3px solid #12b886'
-                        : '3px solid transparent',
-                      transition: 'all 0.15s ease',
+                        ? "3px solid #2dd4bf"
+                        : "3px solid transparent",
+                      transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
                         (e.currentTarget as HTMLElement).style.backgroundColor =
-                          'rgba(255,255,255,0.05)';
+                          "rgba(255, 255, 255, 0.08)";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive) {
                         (e.currentTarget as HTMLElement).style.backgroundColor =
-                          'transparent';
+                          "transparent";
                       }
                     }}
                   >
@@ -186,7 +201,9 @@ export default function AppLayout() {
                       <Text
                         size="sm"
                         fw={isActive ? 600 : 400}
-                        c={isActive ? 'teal' : 'dimmed'}
+                        style={{
+                          color: isActive ? "#2dd4bf" : "#cbd5e1",
+                        }}
                       >
                         {item.label}
                       </Text>
@@ -198,7 +215,7 @@ export default function AppLayout() {
           </Stack>
         </AppShell.Section>
 
-        <Divider my="sm" />
+        <Divider my="sm" color="rgba(255, 255, 255, 0.12)" />
 
         <AppShell.Section>
           <Tooltip label="Cerrar sesión" position="right">
@@ -210,21 +227,21 @@ export default function AppLayout() {
               style={{
                 borderRadius: 8,
                 opacity: loggingOut ? 0.5 : 1,
-                transition: 'background 0.15s ease',
+                transition: "background 0.15s ease",
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor =
-                  'rgba(250, 82, 82, 0.1)';
+                  "rgba(248, 113, 113, 0.15)";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor =
-                  'transparent';
+                  "transparent";
               }}
             >
               <Group gap="sm">
                 <Text size="lg">🚪</Text>
-                <Text size="sm" c="red.4">
-                  {loggingOut ? 'Cerrando...' : 'Cerrar sesión'}
+                <Text size="sm" fw={500} style={{ color: "#f87171" }}>
+                  {loggingOut ? "Cerrando..." : "Cerrar sesión"}
                 </Text>
               </Group>
             </UnstyledButton>

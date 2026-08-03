@@ -11,10 +11,10 @@ export declare class JwtStrategy extends JwtStrategy_base {
         name: string;
         created_at: Date | null;
         updated_at: Date | null;
+        rut: string | null;
         email: string;
         email_verified_at: Date | null;
         remember_token: string | null;
-        rut: string | null;
     }>;
 }
 export {};

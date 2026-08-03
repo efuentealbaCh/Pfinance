@@ -5,9 +5,9 @@ export declare class BanksService {
     findAll(): Promise<{
         id: string;
         name: string;
+        logo: string | null;
         created_at: Date | null;
         updated_at: Date | null;
-        logo: string | null;
     }[]>;
     findAccountTypesByBankId(bankId: string): Promise<{
         id: string;

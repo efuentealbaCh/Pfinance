@@ -29,7 +29,8 @@ async function main() {
     }
     const accountTypes = [
         { id: (0, uuid_1.v4)(), name: 'Cuenta Corriente' },
-        { id: (0, uuid_1.v4)(), name: 'Cuenta Vista / RUT' },
+        { id: (0, uuid_1.v4)(), name: 'Cuenta Vista' },
+        { id: (0, uuid_1.v4)(), name: 'Cuenta RUT' },
         { id: (0, uuid_1.v4)(), name: 'Cuenta de Ahorro' },
         { id: (0, uuid_1.v4)(), name: 'Tarjeta de Crédito' },
         { id: (0, uuid_1.v4)(), name: 'Línea de Crédito' },
@@ -43,18 +44,18 @@ async function main() {
         });
     }
     const bankAccountLinks = {
-        'BancoEstado': ['Cuenta Vista / RUT', 'Cuenta Corriente', 'Cuenta de Ahorro'],
-        'Banco Santander': ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito'],
-        'Banco de Chile': ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'],
-        'Banco de Crédito e Inversiones (BCI)': ['Cuenta Corriente', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+        'BancoEstado': ['Cuenta RUT', 'Cuenta Vista', 'Cuenta Corriente', 'Cuenta de Ahorro'],
+        'Banco Santander': ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito'],
+        'Banco de Chile': ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'],
+        'Banco de Crédito e Inversiones (BCI)': ['Cuenta Corriente', 'Cuenta Vista', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
         'Tenpo (Prepago/Digital)': ['Cuenta Prepago'],
         'Mercado Pago (Prepago/Digital)': ['Cuenta Prepago'],
-        'Banco Falabella': ['Cuenta Corriente', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
+        'Banco Falabella': ['Cuenta Corriente', 'Cuenta Vista', 'Tarjeta de Crédito', 'Cuenta de Ahorro'],
     };
     const dbBanks = await prisma.banks.findMany();
     const dbAccountTypes = await prisma.account_types.findMany();
     for (const b of dbBanks) {
-        const supportedTypes = bankAccountLinks[b.name] || ['Cuenta Corriente', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'];
+        const supportedTypes = bankAccountLinks[b.name] || ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Tarjeta de Crédito', 'Línea de Crédito'];
         for (const st of supportedTypes) {
             const type = dbAccountTypes.find(t => t.name === st);
             if (type) {
@@ -87,21 +88,28 @@ async function main() {
         { name: 'Regalos', icon: '🎁', color: '#E17055' },
         { name: 'Ahorros', icon: '🏦', color: '#2ED573' },
         { name: 'Sueldo', icon: '💼', color: '#00B894' },
-        { name: 'Freelance', icon: '🧑‍💻', color: '#00CEC9' },
-        { name: 'Inversiones', icon: '📈', color: '#0984E3' },
-        { name: 'Ventas', icon: '🏷️', color: '#FDCB6E' },
-        { name: 'Otros ingresos', icon: '💵', color: '#55EFC4' },
-        { name: 'Otros', icon: '📦', color: '#B2BEC3' },
+        { name: 'Ventas y negocios', icon: '📈', color: '#10AC84' },
+        { name: 'Inversiones', icon: '🪙', color: '#F1C40F' },
+        { name: 'Otros ingresos', icon: '💰', color: '#2ECC71' },
+        { name: 'Otros gastos', icon: '📦', color: '#95A5A6' }
     ];
     for (const cat of categories) {
-        const existing = await prisma.categories.findFirst({ where: { name: cat.name } });
-        if (!existing) {
+        const existing = await prisma.categories.findFirst({
+            where: { name: cat.name },
+        });
+        if (existing) {
+            await prisma.categories.update({
+                where: { id: existing.id },
+                data: { icon: cat.icon, color: cat.color, updated_at: new Date() },
+            });
+        }
+        else {
             await prisma.categories.create({
-                data: { id: (0, uuid_1.v4)(), ...cat, created_at: new Date(), updated_at: new Date() },
+                data: { id: (0, uuid_1.v4)(), name: cat.name, icon: cat.icon, color: cat.color, created_at: new Date(), updated_at: new Date() },
             });
         }
     }
-    console.log('Seed executed successfully.');
+    console.log('Seeding completed successfully!');
 }
 main()
     .catch((e) => {
