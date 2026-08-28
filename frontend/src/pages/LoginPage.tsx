@@ -14,6 +14,7 @@ import {
   Alert,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconWallet } from '@tabler/icons-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -68,9 +69,13 @@ export default function LoginPage() {
             color: '#fff',
             fontSize: '2.2rem',
             marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
           }}
         >
-          💰 Pfinance
+          <IconWallet size={32} stroke={2} /> Pfinance
         </Title>
         <Text c="dimmed" size="sm" ta="center" mb={30}>
           Inicia sesión para administrar tus finanzas

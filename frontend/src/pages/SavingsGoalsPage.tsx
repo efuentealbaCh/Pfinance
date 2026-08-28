@@ -15,6 +15,15 @@ import {
     RingProgress,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import {
+    IconTarget,
+    IconPlus,
+    IconCoin,
+    IconPencil,
+    IconTrash,
+    IconCheck,
+    IconCalendar,
+} from '@tabler/icons-react';
 import { useSavingsGoals, useDeleteSavingsGoal } from '../api/queries';
 import SavingsGoalModal from '../components/SavingsGoalModal';
 import SavingsGoalDepositModal from '../components/SavingsGoalDepositModal';
@@ -155,16 +164,19 @@ export default function SavingsGoalsPage() {
                 <Paper withBorder shadow="xl" p="xl" radius="lg">
                     {/* ─── Header ─────────────────────────────────────── */}
                     <Group justify="space-between" mb="xl">
-                        <Title order={3}>🎯 Metas de Ahorro</Title>
+                        <Title order={3} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <IconTarget size={24} /> Metas de Ahorro
+                        </Title>
                         <Button
                             color="teal"
                             radius="md"
+                            leftSection={<IconPlus size={16} />}
                             onClick={() => {
                                 setEditGoal(null);
                                 setModalOpened(true);
                             }}
                         >
-                            ➕ Nueva meta
+                            Nueva meta
                         </Button>
                     </Group>
 
@@ -201,7 +213,7 @@ export default function SavingsGoalsPage() {
                     {/* ─── Grid de metas ──────────────────────────────── */}
                     {goals.length === 0 ? (
                         <Stack align="center" py="xl" gap="md">
-                            <Text size="3rem">🎯</Text>
+                            <IconTarget size={48} stroke={1.5} color="var(--mantine-color-dimmed)" />
                             <Text c="dimmed" ta="center">
                                 No hay metas de ahorro registradas aún.
                             </Text>
@@ -249,14 +261,20 @@ export default function SavingsGoalsPage() {
                                                     </Text>
                                                     <Group gap={4}>
                                                         {goal.is_completed && (
-                                                            <Badge color="teal" variant="filled" size="xs">
-                                                                ✅ Completada
+                                                            <Badge
+                                                                color="teal"
+                                                                variant="filled"
+                                                                size="xs"
+                                                                leftSection={<IconCheck size={10} />}
+                                                            >
+                                                                Completada
                                                             </Badge>
                                                         )}
                                                         {goal.deadline && (
                                                             <Badge
                                                                 size="xs"
                                                                 variant="light"
+                                                                leftSection={<IconCalendar size={10} />}
                                                                 color={
                                                                     daysLeft !== null && daysLeft < 0
                                                                         ? 'red'
@@ -265,7 +283,7 @@ export default function SavingsGoalsPage() {
                                                                           : 'gray'
                                                                 }
                                                             >
-                                                                📅 {formatDate(goal.deadline)}
+                                                                {formatDate(goal.deadline)}
                                                                 {daysLeft !== null && daysLeft >= 0
                                                                     ? ` (${daysLeft}d)`
                                                                     : daysLeft !== null
@@ -285,7 +303,7 @@ export default function SavingsGoalsPage() {
                                                         size="sm"
                                                         onClick={() => handleDeposit(goal)}
                                                     >
-                                                        💰
+                                                        <IconCoin size={16} />
                                                     </ActionIcon>
                                                 </Tooltip>
                                                 <Tooltip label="Editar">
@@ -295,7 +313,7 @@ export default function SavingsGoalsPage() {
                                                         size="sm"
                                                         onClick={() => handleEdit(goal)}
                                                     >
-                                                        ✏️
+                                                        <IconPencil size={16} />
                                                     </ActionIcon>
                                                 </Tooltip>
                                                 <Tooltip label="Eliminar">
@@ -305,7 +323,7 @@ export default function SavingsGoalsPage() {
                                                         size="sm"
                                                         onClick={() => handleDelete(goal)}
                                                     >
-                                                        🗑️
+                                                        <IconTrash size={16} />
                                                     </ActionIcon>
                                                 </Tooltip>
                                             </Group>

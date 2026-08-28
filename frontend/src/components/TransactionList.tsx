@@ -15,6 +15,15 @@ import {
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useState } from 'react';
+import {
+    IconSearch,
+    IconTrendingDown,
+    IconTrendingUp,
+    IconArrowsExchange,
+    IconArrowRight,
+    IconPencil,
+    IconTrash,
+} from '@tabler/icons-react';
 
 interface Transaction {
     id: string;
@@ -106,8 +115,8 @@ export default function TransactionList({
             {/* ─── Filtros ─────────────────────────────────────── */}
             <Paper withBorder p="md" radius="md">
                 <Group justify="space-between" mb={filtersOpened ? 'sm' : 0}>
-                    <Text size="sm" fw={600}>
-                        🔍 Filtros
+                    <Text size="sm" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <IconSearch size={14} /> Filtros
                     </Text>
                     <Button variant="subtle" size="xs" onClick={() => setFiltersOpened((o) => !o)}>
                         {filtersOpened ? 'Ocultar' : 'Mostrar'}
@@ -126,9 +135,30 @@ export default function TransactionList({
                                     size="xs"
                                     data={[
                                         { label: 'Todos', value: '' },
-                                        { label: '📉 Gastos', value: 'expense' },
-                                        { label: '📈 Ingresos', value: 'income' },
-                                        { label: '🔄 Transferencias', value: 'transfer' },
+                                        {
+                                            label: (
+                                                <Group gap={4} justify="center" wrap="nowrap">
+                                                    <IconTrendingDown size={14} /> <span>Gastos</span>
+                                                </Group>
+                                            ),
+                                            value: 'expense',
+                                        },
+                                        {
+                                            label: (
+                                                <Group gap={4} justify="center" wrap="nowrap">
+                                                    <IconTrendingUp size={14} /> <span>Ingresos</span>
+                                                </Group>
+                                            ),
+                                            value: 'income',
+                                        },
+                                        {
+                                            label: (
+                                                <Group gap={4} justify="center" wrap="nowrap">
+                                                    <IconArrowsExchange size={14} /> <span>Transferencias</span>
+                                                </Group>
+                                            ),
+                                            value: 'transfer',
+                                        },
                                     ]}
                                     value={filters.type}
                                     onChange={(value) => updateFilter('type', value)}
@@ -240,8 +270,14 @@ export default function TransactionList({
                         <Group justify="space-between" wrap="nowrap">
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <Group gap="xs" mb={4}>
-                                    <Text fw={600} size="sm">
-                                        {tx.type === 'transfer' ? '🔄 Transferencia' : (tx.category?.icon || '📁') + ' ' + (tx.category?.name || 'Sin categoría')}
+                                    <Text fw={600} size="sm" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                        {tx.type === 'transfer' ? (
+                                            <>
+                                                <IconArrowsExchange size={14} /> Transferencia
+                                            </>
+                                        ) : (
+                                            (tx.category?.icon || '📁') + ' ' + (tx.category?.name || 'Sin categoría')
+                                        )}
                                     </Text>
                                     <Badge
                                         size="xs"
@@ -262,8 +298,10 @@ export default function TransactionList({
                                             {tx.user_account?.bank?.logo ? (
                                                 <Avatar src={tx.user_account.bank.logo} size="xs" radius="xl" alt={tx.user_account.bank.name} />
                                             ) : null}
-                                            <Text c="dimmed" size="xs">
-                                                Desde: {tx.user_account?.bank?.name} {tx.user_account?.identifier} ➔ Hacia: {tx.target_account?.bank?.name} {tx.target_account?.identifier}
+                                            <Text c="dimmed" size="xs" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                Desde: {tx.user_account?.bank?.name} {tx.user_account?.identifier}
+                                                <IconArrowRight size={12} />
+                                                Hacia: {tx.target_account?.bank?.name} {tx.target_account?.identifier}
                                             </Text>
                                         </Group>
                                     ) : (
@@ -311,7 +349,7 @@ export default function TransactionList({
                                         size="sm"
                                         onClick={() => onEdit(tx)}
                                     >
-                                        ✏️
+                                        <IconPencil size={16} />
                                     </ActionIcon>
                                 </Tooltip>
 
@@ -322,7 +360,7 @@ export default function TransactionList({
                                         size="sm"
                                         onClick={() => onDelete(tx.id)}
                                     >
-                                        🗑️
+                                        <IconTrash size={16} />
                                     </ActionIcon>
                                 </Tooltip>
                             </Group>

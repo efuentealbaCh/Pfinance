@@ -16,7 +16,7 @@ import {
   Loader,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconPlus, IconTrash, IconAlertCircle, IconLock } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertCircle, IconLock, IconPencil } from '@tabler/icons-react';
 import api from '../api/axios';
 
 interface Bank {
@@ -194,7 +194,12 @@ export default function AccountModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={editData ? "📝 Editar Cuenta y Tarjetas" : "➕ Nueva Cuenta y Tarjetas"}
+      title={
+        <Group gap={6}>
+          {editData ? <IconPencil size={18} /> : <IconPlus size={18} />}
+          <Text fw={600}>{editData ? 'Editar Cuenta y Tarjetas' : 'Nueva Cuenta y Tarjetas'}</Text>
+        </Group>
+      }
       centered
       radius="lg"
       size="lg"
@@ -225,7 +230,7 @@ export default function AccountModal({
                 label="Tipo de cuenta"
                 placeholder={
                   !isBankSelected
-                    ? '🔒 Primero selecciona un banco'
+                    ? 'Primero selecciona un banco'
                     : loadingAccountTypes
                     ? 'Cargando tipos de cuenta...'
                     : accountTypes.length === 0

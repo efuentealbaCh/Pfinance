@@ -14,6 +14,14 @@ import {
   SimpleGrid,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import {
+  IconClipboardList,
+  IconPlus,
+  IconChartBar,
+  IconPencil,
+  IconTrash,
+  IconAlertTriangle,
+} from "@tabler/icons-react";
 import { useBudgets, useDeleteBudget } from "../api/queries";
 import BudgetModal from "../components/BudgetModal";
 
@@ -131,23 +139,26 @@ export default function BudgetsPage() {
         <Paper withBorder shadow="xl" p="xl" radius="lg">
           {/* ─── Header ─────────────────────────────────────── */}
           <Group justify="space-between" mb="xl">
-            <Title order={3}>📋 Presupuestos</Title>
+            <Title order={3} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <IconClipboardList size={24} /> Presupuestos
+            </Title>
             <Button
               color="teal"
               radius="md"
+              leftSection={<IconPlus size={16} />}
               onClick={() => {
                 setEditBudget(null);
                 setModalOpened(true);
               }}
             >
-              ➕ Nuevo presupuesto
+              Nuevo presupuesto
             </Button>
           </Group>
 
           {/* ─── Grid de presupuestos ──────────────────────── */}
           {budgets.length === 0 ? (
             <Stack align="center" py="xl" gap="md">
-              <Text size="3rem">📊</Text>
+              <IconChartBar size={48} stroke={1.5} color="var(--mantine-color-dimmed)" />
               <Text c="dimmed" ta="center">
                 No hay presupuestos registrados aún.
               </Text>
@@ -205,7 +216,7 @@ export default function BudgetsPage() {
                             size="sm"
                             onClick={() => handleEdit(budget)}
                           >
-                            ✏️
+                            <IconPencil size={16} />
                           </ActionIcon>
                         </Tooltip>
                         <Tooltip label="Eliminar">
@@ -215,7 +226,7 @@ export default function BudgetsPage() {
                             size="sm"
                             onClick={() => handleDelete(budget)}
                           >
-                            🗑️
+                            <IconTrash size={16} />
                           </ActionIcon>
                         </Tooltip>
                       </Group>
@@ -246,13 +257,23 @@ export default function BudgetsPage() {
                         {budget.percentage}%
                       </Text>
                       {isOver && (
-                        <Badge color="red" variant="filled" size="xs">
-                          ⚠️ Excedido
+                        <Badge
+                          color="red"
+                          variant="filled"
+                          size="xs"
+                          leftSection={<IconAlertTriangle size={10} />}
+                        >
+                          Excedido
                         </Badge>
                       )}
                       {isWarning && (
-                        <Badge color="orange" variant="filled" size="xs">
-                          ⚠️ Casi al límite
+                        <Badge
+                          color="orange"
+                          variant="filled"
+                          size="xs"
+                          leftSection={<IconAlertTriangle size={10} />}
+                        >
+                          Casi al límite
                         </Badge>
                       )}
                     </Group>

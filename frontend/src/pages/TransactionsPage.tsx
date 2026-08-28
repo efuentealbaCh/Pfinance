@@ -13,7 +13,7 @@ import {
     ThemeIcon,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconAlertCircle, IconBuildingBank, IconPlus } from '@tabler/icons-react';
+import { IconAlertCircle, IconAlertTriangle, IconBuildingBank, IconCoin, IconDownload, IconPlus } from '@tabler/icons-react';
 import { useTransactions, useCatalogs, useDeleteTransaction } from '../api/queries';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
@@ -192,22 +192,26 @@ export default function TransactionsPage() {
                 <Paper withBorder shadow="xl" p="xl" radius="lg">
                     {/* ─── Header ─────────────────────────────────────── */}
                     <Group justify="space-between" mb="xl">
-                        <Title order={3}>💰 Transacciones</Title>
+                        <Title order={3} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <IconCoin size={24} /> Transacciones
+                        </Title>
                         <Group gap="sm">
                             <Button
                                 variant="light"
                                 color="blue"
                                 radius="md"
+                                leftSection={<IconDownload size={16} />}
                                 onClick={() => setExportModalOpened(true)}
                             >
-                                📥 Exportar
+                                Exportar
                             </Button>
                             <Button
                                 color="teal"
                                 radius="md"
+                                leftSection={<IconPlus size={16} />}
                                 onClick={handleNewTransactionClick}
                             >
-                                ➕ Nueva transacción
+                                Nueva transacción
                             </Button>
                         </Group>
                     </Group>
@@ -294,7 +298,12 @@ export default function TransactionsPage() {
             <Modal
                 opened={noAccountModalOpened}
                 onClose={() => setNoAccountModalOpened(false)}
-                title="⚠️ No puedes agregar transacciones aún"
+                title={
+                    <Group gap={6}>
+                        <IconAlertTriangle size={18} color="var(--mantine-color-yellow-6)" />
+                        <Text fw={600}>No puedes agregar transacciones aún</Text>
+                    </Group>
+                }
                 centered
                 radius="lg"
                 size="sm"

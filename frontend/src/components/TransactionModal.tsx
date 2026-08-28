@@ -10,9 +10,17 @@ import {
     SegmentedControl,
     Switch,
     Text,
+    Group,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import {
+    IconPencil,
+    IconCoin,
+    IconTrendingDown,
+    IconTrendingUp,
+    IconArrowsExchange,
+} from '@tabler/icons-react';
 import { useCreateTransaction, useUpdateTransaction, useCatalogs } from '../api/queries';
 
 
@@ -154,7 +162,12 @@ export default function TransactionModal({
         <Modal
             opened={opened}
             onClose={onClose}
-            title={editData ? '✏️ Editar transacción' : '💰 Nueva transacción'}
+            title={
+                <Group gap={6}>
+                    {editData ? <IconPencil size={18} /> : <IconCoin size={18} />}
+                    <Text fw={600}>{editData ? 'Editar transacción' : 'Nueva transacción'}</Text>
+                </Group>
+            }
             centered
             radius="lg"
             size="md"
@@ -175,9 +188,30 @@ export default function TransactionModal({
                         <SegmentedControl
                             fullWidth
                             data={[
-                                { label: '📉 Gasto', value: 'expense' },
-                                { label: '📈 Ingreso', value: 'income' },
-                                { label: '🔄 Transferencia', value: 'transfer' },
+                                {
+                                    label: (
+                                        <Group gap={4} justify="center" wrap="nowrap">
+                                            <IconTrendingDown size={16} /> <span>Gasto</span>
+                                        </Group>
+                                    ),
+                                    value: 'expense',
+                                },
+                                {
+                                    label: (
+                                        <Group gap={4} justify="center" wrap="nowrap">
+                                            <IconTrendingUp size={16} /> <span>Ingreso</span>
+                                        </Group>
+                                    ),
+                                    value: 'income',
+                                },
+                                {
+                                    label: (
+                                        <Group gap={4} justify="center" wrap="nowrap">
+                                            <IconArrowsExchange size={16} /> <span>Transferencia</span>
+                                        </Group>
+                                    ),
+                                    value: 'transfer',
+                                },
                             ]}
                             color={form.values.type === 'income' ? 'teal' : form.values.type === 'expense' ? 'red' : 'blue'}
                             radius="md"

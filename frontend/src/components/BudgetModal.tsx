@@ -6,9 +6,11 @@ import {
     Button,
     Stack,
     Text,
+    Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { IconPencil, IconClipboardList } from '@tabler/icons-react';
 import { useCatalogs, useCreateBudget, useUpdateBudget } from '../api/queries';
 
 interface BudgetEditData {
@@ -26,9 +28,9 @@ interface BudgetModalProps {
 }
 
 const PERIOD_OPTIONS = [
-    { value: 'monthly', label: '📅 Mensual' },
-    { value: 'weekly', label: '📆 Semanal' },
-    { value: 'yearly', label: '🗓️ Anual' },
+    { value: 'monthly', label: 'Mensual' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'yearly', label: 'Anual' },
 ];
 
 export default function BudgetModal({ opened, onClose, onSuccess, editData }: BudgetModalProps) {
@@ -113,9 +115,12 @@ export default function BudgetModal({ opened, onClose, onSuccess, editData }: Bu
             opened={opened}
             onClose={onClose}
             title={
-                <Text fw={700} size="lg">
-                    {editData ? '✏️ Editar Presupuesto' : '📋 Nuevo Presupuesto'}
-                </Text>
+                <Group gap={6}>
+                    {editData ? <IconPencil size={20} /> : <IconClipboardList size={20} />}
+                    <Text fw={700} size="lg">
+                        {editData ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}
+                    </Text>
+                </Group>
             }
             centered
             radius="lg"

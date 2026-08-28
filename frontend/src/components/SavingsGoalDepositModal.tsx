@@ -6,8 +6,10 @@ import {
     Stack,
     Text,
     SegmentedControl,
+    Group,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconCoin, IconArrowUpRight } from '@tabler/icons-react';
 import { useTransactionSavingsGoal } from '../api/queries';
 
 interface SavingsGoalDepositModalProps {
@@ -63,9 +65,10 @@ export default function SavingsGoalDepositModal({
             {
                 onSuccess: (data) => {
                     notifications.show({
-                        title: action === 'deposit' ? '💰 Abono registrado' : '📤 Retiro registrado',
+                        title: action === 'deposit' ? 'Abono registrado' : 'Retiro registrado',
                         message: data.message || 'Operación exitosa',
                         color: action === 'deposit' ? 'teal' : 'orange',
+                        icon: action === 'deposit' ? <IconCoin size={20} /> : <IconArrowUpRight size={20} />,
                     });
                     setAmount(0);
                     onSuccess();
@@ -90,9 +93,12 @@ export default function SavingsGoalDepositModal({
             opened={opened}
             onClose={onClose}
             title={
-                <Text fw={700} size="lg">
-                    {action === 'deposit' ? '💰 Abonar a' : '📤 Retirar de'} "{goalName}"
-                </Text>
+                <Group gap={6}>
+                    {action === 'deposit' ? <IconCoin size={20} /> : <IconArrowUpRight size={20} />}
+                    <Text fw={700} size="lg">
+                        {action === 'deposit' ? 'Abonar a' : 'Retirar de'} "{goalName}"
+                    </Text>
+                </Group>
             }
             centered
             radius="lg"
@@ -103,8 +109,22 @@ export default function SavingsGoalDepositModal({
                     value={action}
                     onChange={setAction}
                     data={[
-                        { label: '💰 Abonar', value: 'deposit' },
-                        { label: '📤 Retirar', value: 'withdraw' },
+                        {
+                            label: (
+                                <Group gap={4} justify="center" wrap="nowrap">
+                                    <IconCoin size={16} /> <span>Abonar</span>
+                                </Group>
+                            ),
+                            value: 'deposit',
+                        },
+                        {
+                            label: (
+                                <Group gap={4} justify="center" wrap="nowrap">
+                                    <IconArrowUpRight size={16} /> <span>Retirar</span>
+                                </Group>
+                            ),
+                            value: 'withdraw',
+                        },
                     ]}
                     radius="md"
                     fullWidth

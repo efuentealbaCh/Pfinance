@@ -9,6 +9,7 @@ import {
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
+import { IconDownload, IconFileSpreadsheet, IconFileTypePdf } from '@tabler/icons-react';
 import api from '../api/axios';
 
 interface ExportModalProps {
@@ -91,9 +92,12 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
             opened={opened}
             onClose={onClose}
             title={
-                <Text fw={700} size="lg">
-                    📥 Exportar Transacciones
-                </Text>
+                <Group gap={6}>
+                    <IconDownload size={20} />
+                    <Text fw={700} size="lg">
+                        Exportar Transacciones
+                    </Text>
+                </Group>
             }
             centered
             radius="lg"
@@ -108,8 +112,22 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
                     value={format}
                     onChange={setFormat}
                     data={[
-                        { label: '📊 Excel (.xlsx)', value: 'excel' },
-                        { label: '📄 PDF (Documento)', value: 'pdf' },
+                        {
+                            label: (
+                                <Group gap={4} justify="center" wrap="nowrap">
+                                    <IconFileSpreadsheet size={16} /> <span>Excel (.xlsx)</span>
+                                </Group>
+                            ),
+                            value: 'excel',
+                        },
+                        {
+                            label: (
+                                <Group gap={4} justify="center" wrap="nowrap">
+                                    <IconFileTypePdf size={16} /> <span>PDF (Documento)</span>
+                                </Group>
+                            ),
+                            value: 'pdf',
+                        },
                     ]}
                     radius="md"
                     fullWidth

@@ -12,6 +12,12 @@ import {
   Divider,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import {
+  IconChartBar,
+  IconPlus,
+  IconChevronUp,
+  IconClipboardList,
+} from "@tabler/icons-react";
 import api from "../api/axios";
 import AccountModal from "../components/AccountModal";
 import AccountList from "../components/AccountList";
@@ -96,8 +102,8 @@ export default function DashboardPage() {
   return (
     <>
       <Container size="md" py="xl">
-        <Title order={3} mb="xl">
-          📊 Dashboard — ¡Hola, {user?.name}!
+        <Title order={3} mb="xl" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <IconChartBar size={24} /> Dashboard — ¡Hola, {user?.name}!
         </Title>
 
         <Stack gap="md">
@@ -127,22 +133,30 @@ export default function DashboardPage() {
             <Button
               color="teal"
               radius="md"
+              leftSection={<IconPlus size={16} />}
               onClick={() => {
                 setEditAccount(null);
                 setModalOpened(true);
               }}
             >
-              ➕ Agregar cuenta
+              Agregar cuenta
             </Button>
             <Button
               variant={showAccounts ? "filled" : "outline"}
               color="teal"
               radius="md"
+              leftSection={
+                showAccounts ? (
+                  <IconChevronUp size={16} />
+                ) : (
+                  <IconClipboardList size={16} />
+                )
+              }
               onClick={() => setShowAccounts(!showAccounts)}
             >
               {showAccounts
-                ? "🔽 Ocultar cuentas"
-                : `📋 Ver cuentas (${accounts.length})`}
+                ? "Ocultar cuentas"
+                : `Ver cuentas (${accounts.length})`}
             </Button>
           </Group>
 
