@@ -16,6 +16,7 @@ import {
   Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconWallet } from '@tabler/icons-react';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -124,9 +125,13 @@ export default function RegisterPage() {
             color: '#fff',
             fontSize: '2.2rem',
             marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
           }}
         >
-          💰 Pfinance
+          <IconWallet size={32} stroke={2} /> Pfinance
         </Title>
         <Text c="dimmed" size="sm" ta="center" mb={30}>
           Crea tu cuenta y toma el control de tus finanzas

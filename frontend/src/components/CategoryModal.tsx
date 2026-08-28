@@ -8,8 +8,10 @@ import {
     Text,
     SimpleGrid,
     Tooltip,
+    Group,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconPencil, IconTag } from '@tabler/icons-react';
 import { useCreateCategory, useUpdateCategory } from '../api/queries';
 
 // Colores predefinidos para elegir rápido
@@ -118,7 +120,12 @@ export default function CategoryModal({
         <Modal
             opened={opened}
             onClose={onClose}
-            title={editData ? '✏️ Editar categoría' : '🏷️ Nueva categoría'}
+            title={
+                <Group gap={6}>
+                    {editData ? <IconPencil size={18} /> : <IconTag size={18} />}
+                    <Text fw={600}>{editData ? 'Editar categoría' : 'Nueva categoría'}</Text>
+                </Group>
+            }
             centered
             radius="lg"
             size="sm"

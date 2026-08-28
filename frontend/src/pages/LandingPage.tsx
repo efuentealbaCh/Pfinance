@@ -1,7 +1,26 @@
 import { useEffect, useRef } from 'react';
+import type { ComponentType } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Group, Text, Container, Center, Loader } from '@mantine/core';
+import {
+  IconChartBar,
+  IconCreditCard,
+  IconTrendingUp,
+  IconTarget,
+  IconClipboardList,
+  IconUsers,
+  IconPencil,
+  IconBuildingBank,
+  IconRocket,
+  IconCoin,
+  IconArrowDown,
+  IconLock,
+  IconDeviceMobile,
+  IconBolt,
+} from '@tabler/icons-react';
+
+type TablerIconComponent = ComponentType<{ size?: number | string; color?: string; stroke?: number | string }>;
 
 /* ─── Scroll-triggered animation hook ─────────────────── */
 function useScrollAnimation() {
@@ -36,55 +55,55 @@ const GLASS = {
   borderRadius: '16px',
 } as const;
 
-const FEATURES = [
+const FEATURES: { icon: TablerIconComponent; title: string; desc: string }[] = [
   {
-    icon: '📊',
+    icon: IconChartBar,
     title: 'Dashboard inteligente',
     desc: 'Visualiza tu balance total, analíticas de gastos y tendencias en tiempo real con gráficos interactivos.',
   },
   {
-    icon: '💳',
+    icon: IconCreditCard,
     title: 'Múltiples cuentas y tarjetas',
     desc: 'Administra todas tus cuentas bancarias y tarjetas en un solo lugar, con soporte para los principales bancos de Chile.',
   },
   {
-    icon: '📈',
+    icon: IconTrendingUp,
     title: 'Presupuestos por categoría',
     desc: 'Establece límites mensuales por categoría y recibe alertas cuando estés cerca de excederlos.',
   },
   {
-    icon: '🎯',
+    icon: IconTarget,
     title: 'Metas de ahorro',
     desc: 'Define objetivos financieros, registra depósitos y observa tu progreso con barras visuales.',
   },
   {
-    icon: '📋',
+    icon: IconClipboardList,
     title: 'Copiado rápido de datos',
     desc: 'Comparte tus datos de transferencia al instante. Copia tu nombre, RUT, banco y número de cuenta con un solo clic.',
   },
   {
-    icon: '👥',
+    icon: IconUsers,
     title: 'Gastos compartidos',
     desc: 'Crea grupos, divide gastos con amigos o familia y mantén el control de quién debe qué.',
   },
 ];
 
-const STEPS = [
+const STEPS: { num: string; icon: TablerIconComponent; title: string; desc: string }[] = [
   {
     num: '01',
-    icon: '✍️',
+    icon: IconPencil,
     title: 'Crea tu cuenta',
     desc: 'Regístrate en segundos con tu correo y RUT. Tus datos se almacenan de forma encriptada.',
   },
   {
     num: '02',
-    icon: '🏦',
+    icon: IconBuildingBank,
     title: 'Conecta tus cuentas',
     desc: 'Agrega tus cuentas bancarias y tarjetas. Selecciona tu banco y el sistema carga los tipos de cuenta disponibles.',
   },
   {
     num: '03',
-    icon: '🚀',
+    icon: IconRocket,
     title: 'Controla tus finanzas',
     desc: 'Registra transacciones, establece presupuestos, fija metas de ahorro y comparte gastos con tu grupo.',
   },
@@ -141,9 +160,12 @@ export default function LandingPage() {
             color: '#fff',
             textDecoration: 'none',
             letterSpacing: '-0.5px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
           }}
         >
-          💰 Pfinance
+          <IconCoin size={22} stroke={2} /> Pfinance
         </Text>
 
         <Group gap="xs" visibleFrom="xs">
@@ -222,13 +244,14 @@ export default function LandingPage() {
             <Text
               component="span"
               style={{
-                display: 'inline-block',
-                fontSize: '4.5rem',
+                display: 'inline-flex',
+                justifyContent: 'center',
                 marginBottom: '0.5rem',
                 animation: 'float 4s ease-in-out infinite',
+                color: '#2dd4bf',
               }}
             >
-              💰
+              <IconCoin size={72} stroke={1.5} />
             </Text>
 
             <h1
@@ -335,8 +358,13 @@ export default function LandingPage() {
             animation: 'pulse 2s ease-in-out infinite',
           }}
         >
-          <Text size="sm" c="dimmed" ta="center">
-            ↓ Descubre más
+          <Text
+            size="sm"
+            c="dimmed"
+            ta="center"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <IconArrowDown size={14} /> Descubre más
           </Text>
         </div>
       </section>
@@ -423,12 +451,12 @@ export default function LandingPage() {
               >
                 <div
                   style={{
-                    fontSize: '2.4rem',
                     marginBottom: '1rem',
-                    display: 'inline-block',
+                    display: 'inline-flex',
+                    color: '#2dd4bf',
                   }}
                 >
-                  {f.icon}
+                  <f.icon size={38} stroke={1.5} />
                 </div>
                 <h3
                   style={{
@@ -536,7 +564,16 @@ export default function LandingPage() {
                   {step.num}
                 </div>
 
-                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{step.icon}</div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                    marginBottom: '0.75rem',
+                    color: '#2dd4bf',
+                  }}
+                >
+                  <step.icon size={32} stroke={1.5} />
+                </div>
 
                 <h3
                   style={{
@@ -605,17 +642,26 @@ export default function LandingPage() {
             }}
           >
             {[
-              { value: '🔒', label: 'Encriptación AES-256', sub: 'Tus datos siempre seguros' },
-              { value: '🏦', label: 'Bancos de Chile', sub: 'Soporte para los principales bancos' },
-              { value: '📱', label: 'App Progresiva (PWA)', sub: 'Instálala en tu celular' },
-              { value: '⚡', label: '100% Gratuito', sub: 'Sin cargos ocultos' },
+              { icon: IconLock, label: 'Encriptación AES-256', sub: 'Tus datos siempre seguros' },
+              { icon: IconBuildingBank, label: 'Bancos de Chile', sub: 'Soporte para los principales bancos' },
+              { icon: IconDeviceMobile, label: 'App Progresiva (PWA)', sub: 'Instálala en tu celular' },
+              { icon: IconBolt, label: '100% Gratuito', sub: 'Sin cargos ocultos' },
             ].map((stat, i) => (
               <div
                 key={i}
                 className={`landing-animate landing-animate-delay-${i + 1}`}
                 style={{ padding: '1.5rem' }}
               >
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{stat.value}</div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                    marginBottom: '0.5rem',
+                    color: '#2dd4bf',
+                  }}
+                >
+                  <stat.icon size={40} stroke={1.5} />
+                </div>
                 <Text fw={700} size="md" style={{ color: '#fff', marginBottom: '0.3rem' }}>
                   {stat.label}
                 </Text>
@@ -656,13 +702,14 @@ export default function LandingPage() {
             <Text
               component="span"
               style={{
-                display: 'inline-block',
-                fontSize: '3rem',
+                display: 'inline-flex',
+                justifyContent: 'center',
                 marginBottom: '1rem',
                 animation: 'float 5s ease-in-out infinite',
+                color: '#fff',
               }}
             >
-              🚀
+              <IconRocket size={48} stroke={1.5} />
             </Text>
             <h2
               style={{
@@ -761,8 +808,12 @@ export default function LandingPage() {
               gap: '1rem',
             }}
           >
-            <Text size="sm" fw={600} style={{ color: '#64748b' }}>
-              💰 Pfinance — Finanzas personales inteligentes
+            <Text
+              size="sm"
+              fw={600}
+              style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <IconCoin size={16} /> Pfinance — Finanzas personales inteligentes
             </Text>
             <Text size="xs" style={{ color: '#475569' }}>
               © {new Date().getFullYear()} Pfinance. Todos los derechos reservados.

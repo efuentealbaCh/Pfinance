@@ -32,6 +32,15 @@ import {
     Legend,
 } from 'recharts';
 import { notifications } from '@mantine/notifications';
+import {
+    IconTrendingUp,
+    IconChartBar,
+    IconChartDonut,
+    IconClipboardList,
+    IconTarget,
+    IconBan,
+    IconAlertTriangle,
+} from '@tabler/icons-react';
 
 interface UserAccount {
     id: string;
@@ -106,10 +115,11 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
             alertBudgets.forEach((b: any) => {
                 notifications.show({
                     title: b.percentage >= 100
-                        ? `⛔ Presupuesto excedido: ${b.category_name}`
-                        : `⚠️ Presupuesto al límite: ${b.category_name}`,
+                        ? `Presupuesto excedido: ${b.category_name}`
+                        : `Presupuesto al límite: ${b.category_name}`,
                     message: `Has gastado ${formatCurrency(b.spent)} de ${formatCurrency(b.amount)} (${b.percentage}%)`,
                     color: b.percentage >= 100 ? 'red' : 'orange',
+                    icon: b.percentage >= 100 ? <IconBan size={20} /> : <IconAlertTriangle size={20} />,
                     autoClose: 8000,
                 });
             });
@@ -271,8 +281,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
                 {/* Gráfico de Evolución del Saldo */}
                 <Paper withBorder p="md" radius="md">
-                    <Title order={5} mb="lg" fw={600}>
-                        📈 Evolución del Saldo
+                    <Title order={5} mb="lg" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <IconTrendingUp size={18} /> Evolución del Saldo
                     </Title>
                     {cumulativeChartData.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">
@@ -325,8 +335,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
                 {/* Gráfico de Barras: Ingresos vs Egresos por mes */}
                 <Paper withBorder p="md" radius="md">
-                    <Title order={5} mb="lg" fw={600}>
-                        📊 Ingresos vs Egresos por Mes
+                    <Title order={5} mb="lg" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <IconChartBar size={18} /> Ingresos vs Egresos por Mes
                     </Title>
                     {monthlyChartData.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">
@@ -360,8 +370,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
                 {/* Gráfico de Dona */}
                 <Paper withBorder p="md" radius="md">
-                    <Title order={5} mb="lg" fw={600}>
-                        🍩 Gastos por Categoría
+                    <Title order={5} mb="lg" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <IconChartDonut size={18} /> Gastos por Categoría
                     </Title>
                     {expensesByCategory.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">
@@ -408,8 +418,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                 <>
                     <Divider />
                     <Paper withBorder p="md" radius="md">
-                        <Title order={5} mb="lg" fw={600}>
-                            📋 Presupuestos del Período
+                        <Title order={5} mb="lg" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <IconClipboardList size={18} /> Presupuestos del Período
                         </Title>
                         <Stack gap="md">
                             {budgetProgress.map((b) => {
@@ -480,8 +490,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                 <>
                     <Divider />
                     <Paper withBorder p="md" radius="md">
-                        <Title order={5} mb="lg" fw={600}>
-                            🎯 Progreso de Metas de Ahorro
+                        <Title order={5} mb="lg" fw={600} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <IconTarget size={18} /> Progreso de Metas de Ahorro
                         </Title>
                         <Stack gap="md">
                             {savingsGoals.map((g) => {

@@ -11,7 +11,7 @@ export default defineConfig({
       workbox: {
         importScripts: ['/push-sw.js']
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'push-sw.js'],
+      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'push-sw.js'],
       manifest: {
         name: 'Pfinance',
         short_name: 'Pfinance',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { ComponentType } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   AppShell,
@@ -14,17 +15,32 @@ import {
   useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import {
+  IconChartBar,
+  IconCoin,
+  IconTag,
+  IconClipboardList,
+  IconTarget,
+  IconUsers,
+  IconUser,
+  IconWallet,
+  IconSun,
+  IconMoon,
+  IconLogout,
+} from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { usePushSubscribe, getVapidPublicKey } from "../api/queries";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: "📊", path: "/dashboard" },
-  { label: "Transacciones", icon: "💰", path: "/transactions" },
-  { label: "Categorías", icon: "🏷️", path: "/categories" },
-  { label: "Presupuestos", icon: "📋", path: "/budgets" },
-  { label: "Metas", icon: "🎯", path: "/savings" },
-  { label: "Grupos", icon: "👥", path: "/groups" },
-  { label: "Mi Perfil", icon: "👤", path: "/profile" },
+type TablerIconComponent = ComponentType<{ size?: number | string; color?: string; stroke?: number | string }>;
+
+const NAV_ITEMS: { label: string; icon: TablerIconComponent; path: string }[] = [
+  { label: "Dashboard", icon: IconChartBar, path: "/dashboard" },
+  { label: "Transacciones", icon: IconCoin, path: "/transactions" },
+  { label: "Categorías", icon: IconTag, path: "/categories" },
+  { label: "Presupuestos", icon: IconClipboardList, path: "/budgets" },
+  { label: "Metas", icon: IconTarget, path: "/savings" },
+  { label: "Grupos", icon: IconUsers, path: "/groups" },
+  { label: "Mi Perfil", icon: IconUser, path: "/profile" },
 ];
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -124,8 +140,9 @@ export default function AppLayout() {
               fw={800}
               variant="gradient"
               gradient={{ from: "teal.3", to: "cyan.3", deg: 45 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
             >
-              💸 Pfinance
+              <IconWallet size={22} stroke={2} /> Pfinance
             </Text>
           </Group>
           <Group gap="sm">
@@ -141,7 +158,7 @@ export default function AppLayout() {
                 backgroundColor: "rgba(255, 255, 255, 0.1)",
               }}
             >
-              {isDark ? "☀️" : "🌙"}
+              {isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
             </ActionIcon>
             <Avatar color="teal" radius="xl" size="sm">
               {user?.name?.charAt(0).toUpperCase() || "?"}
@@ -197,7 +214,11 @@ export default function AppLayout() {
                     }}
                   >
                     <Group gap="sm">
-                      <Text size="lg">{item.icon}</Text>
+                      <item.icon
+                        size={20}
+                        stroke={1.75}
+                        color={isActive ? "#2dd4bf" : "#cbd5e1"}
+                      />
                       <Text
                         size="sm"
                         fw={isActive ? 600 : 400}
@@ -239,7 +260,7 @@ export default function AppLayout() {
               }}
             >
               <Group gap="sm">
-                <Text size="lg">🚪</Text>
+                <IconLogout size={20} stroke={1.75} color="#f87171" />
                 <Text size="sm" fw={500} style={{ color: "#f87171" }}>
                   {loggingOut ? "Cerrando..." : "Cerrar sesión"}
                 </Text>

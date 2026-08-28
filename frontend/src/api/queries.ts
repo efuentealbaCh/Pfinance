@@ -1,5 +1,7 @@
+import { createElement } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
+import { IconAlertTriangle, IconCoin, IconTrophy } from '@tabler/icons-react';
 import api from './axios';
 
 // ─── TYPES ──────────────────────────────────────────────────
@@ -194,7 +196,7 @@ export const useCreateTransaction = () => {
             title: 'Presupuesto en riesgo',
             message: warning,
             color: 'orange',
-            icon: '⚠️',
+            icon: createElement(IconAlertTriangle, { size: 20 }),
             autoClose: 8000,
           });
         });
@@ -205,7 +207,7 @@ export const useCreateTransaction = () => {
           title: 'Transacción grande',
           message: `Has registrado un gasto inusualmente alto de $${data.transaction.amount}.`,
           color: 'red',
-          icon: '💸',
+          icon: createElement(IconCoin, { size: 20 }),
         });
       }
     },
@@ -230,7 +232,7 @@ export const useUpdateTransaction = () => {
             title: 'Presupuesto en riesgo',
             message: warning,
             color: 'orange',
-            icon: '⚠️',
+            icon: createElement(IconAlertTriangle, { size: 20 }),
             autoClose: 8000,
           });
         });
@@ -241,7 +243,7 @@ export const useUpdateTransaction = () => {
           title: 'Transacción grande',
           message: `Has registrado un gasto inusualmente alto de $${data.transaction.amount}.`,
           color: 'red',
-          icon: '💸',
+          icon: createElement(IconCoin, { size: 20 }),
         });
       }
     },
@@ -454,10 +456,10 @@ export const useTransactionSavingsGoal = () => {
         parseFloat(data.savings_goal.current_amount) >= parseFloat(data.savings_goal.target_amount)
       ) {
         notifications.show({
-          title: '¡Meta de Ahorro Alcanzada! 🎉',
+          title: '¡Meta de Ahorro Alcanzada!',
           message: `Felicidades, has completado tu meta "${data.savings_goal.name}".`,
           color: 'teal',
-          icon: '🏆',
+          icon: createElement(IconTrophy, { size: 20 }),
           autoClose: 10000,
         });
       }

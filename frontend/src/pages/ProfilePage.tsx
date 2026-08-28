@@ -13,6 +13,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { IconUser, IconLock } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import { useUpdateProfile, useUpdatePassword } from '../api/queries';
 
@@ -110,8 +111,8 @@ export default function ProfilePage() {
 
     return (
         <Container size="sm" py="xl">
-            <Title order={3} mb="xl">
-                👤 Mi Perfil
+            <Title order={3} mb="xl" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <IconUser size={24} /> Mi Perfil
             </Title>
 
             {/* ─── Datos personales ──────────────────────────────── */}
@@ -151,8 +152,8 @@ export default function ProfilePage() {
 
             {/* ─── Cambiar contraseña ────────────────────────────── */}
             <Paper withBorder shadow="md" p="xl" radius="lg">
-                <Text fw={600} size="lg" mb="md">
-                    🔒 Cambiar contraseña
+                <Text fw={600} size="lg" mb="md" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <IconLock size={18} /> Cambiar contraseña
                 </Text>
                 <form onSubmit={passwordForm.onSubmit(handlePasswordSubmit)}>
                     <Stack>

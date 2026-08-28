@@ -13,6 +13,7 @@ import {
     Stack,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconTag, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useCatalogs, useDeleteCategory } from '../api/queries';
 import CategoryModal from '../components/CategoryModal';
 
@@ -96,16 +97,19 @@ export default function CategoriesPage() {
                 <Paper withBorder shadow="xl" p="xl" radius="lg">
                     {/* ─── Header ─────────────────────────────────────── */}
                     <Group justify="space-between" mb="xl">
-                        <Title order={3}>🏷️ Categorías</Title>
+                        <Title order={3} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <IconTag size={24} /> Categorías
+                        </Title>
                         <Button
                             color="teal"
                             radius="md"
+                            leftSection={<IconPlus size={16} />}
                             onClick={() => {
                                 setEditCategory(null);
                                 setModalOpened(true);
                             }}
                         >
-                            ➕ Nueva categoría
+                            Nueva categoría
                         </Button>
                     </Group>
 
@@ -163,7 +167,7 @@ export default function CategoriesPage() {
                                                     size="sm"
                                                     onClick={() => handleEdit(cat)}
                                                 >
-                                                    ✏️
+                                                    <IconPencil size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
                                             <Tooltip label="Eliminar">
@@ -173,7 +177,7 @@ export default function CategoriesPage() {
                                                     size="sm"
                                                     onClick={() => handleDelete(cat)}
                                                 >
-                                                    🗑️
+                                                    <IconTrash size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
                                         </Group>

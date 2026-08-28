@@ -12,6 +12,7 @@ import {
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { IconPencil, IconTarget } from '@tabler/icons-react';
 import { useCreateSavingsGoal, useUpdateSavingsGoal } from '../api/queries';
 
 interface GoalEditData {
@@ -124,9 +125,12 @@ export default function SavingsGoalModal({ opened, onClose, onSuccess, editData 
             opened={opened}
             onClose={onClose}
             title={
-                <Text fw={700} size="lg">
-                    {editData ? '✏️ Editar Meta' : '🎯 Nueva Meta de Ahorro'}
-                </Text>
+                <Group gap={6}>
+                    {editData ? <IconPencil size={20} /> : <IconTarget size={20} />}
+                    <Text fw={700} size="lg">
+                        {editData ? 'Editar Meta' : 'Nueva Meta de Ahorro'}
+                    </Text>
+                </Group>
             }
             centered
             radius="lg"
