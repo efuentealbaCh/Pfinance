@@ -3,6 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { EncryptionService } from './encryption.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +16,7 @@ export class AuthService {
     private encryptionService: EncryptionService,
   ) {}
 
-  async register(data: any) {
+  async register(data: RegisterDto) {
     const existingUser = await this.prisma.users.findUnique({
       where: { email: data.email },
     });
@@ -50,7 +54,7 @@ export class AuthService {
     };
   }
 
-  async login(data: any) {
+  async login(data: LoginDto) {
     const user = await this.prisma.users.findUnique({
       where: { email: data.email },
     });
@@ -70,7 +74,7 @@ export class AuthService {
     };
   }
 
-  async updateProfile(userId: string, data: any) {
+  async updateProfile(userId: string, data: UpdateProfileDto) {
     let encryptedRut: string | null | undefined = undefined;
     if (data.rut !== undefined) {
       encryptedRut = data.rut ? this.encryptionService.encrypt(data.rut) : null;
@@ -88,7 +92,7 @@ export class AuthService {
     return { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, rut: this.encryptionService.decrypt(updatedUser.rut) };
   }
 
-  async updatePassword(userId: string, data: any) {
+  async updatePassword(userId: string, data: UpdatePasswordDto) {
     const user = await this.prisma.users.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
