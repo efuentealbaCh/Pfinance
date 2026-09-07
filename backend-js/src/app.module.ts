@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -12,6 +13,7 @@ import { AccountTypesModule } from './account-types/account-types.module';
 import { CategoriesModule } from './categories/categories.module';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { RecurringTransactionsModule } from './recurring-transactions/recurring-transactions.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { SavingsGoalsModule } from './savings-goals/savings-goals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -30,6 +32,8 @@ import { WebhookModule } from './webhook/webhook.module';
         limit: 100,
       },
     ]),
+    // Habilita los @Cron del proyecto (hoy: el aviso diario de cuotas recurrentes).
+    ScheduleModule.forRoot(),
     PrismaModule,
     MailModule,
     PushModule,
@@ -39,6 +43,7 @@ import { WebhookModule } from './webhook/webhook.module';
     CategoriesModule,
     UserAccountsModule,
     TransactionsModule,
+    RecurringTransactionsModule,
     BudgetsModule,
     SavingsGoalsModule,
     DashboardModule,
