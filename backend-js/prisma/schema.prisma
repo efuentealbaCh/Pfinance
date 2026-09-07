@@ -27,16 +27,28 @@ model banks {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model budget_alerts {
+  id         String   @id @default(uuid()) @db.Uuid
+  budget_id  String   @db.Uuid
+  period_key String   @db.VarChar(20)
+  threshold  Int
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  budgets    budgets  @relation(fields: [budget_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "budget_alerts_budget_id_foreign")
+
+  @@unique([budget_id, period_key, threshold], map: "budget_alerts_budget_period_threshold_unique")
+}
+
 model budgets {
-  id          String     @id @db.Uuid
-  user_id     String     @db.Uuid
-  category_id String     @db.Uuid
-  amount      Decimal    @db.Decimal(15, 2)
-  period      String     @default("monthly") @db.VarChar(255)
-  created_at  DateTime?  @db.Timestamp(0)
-  updated_at  DateTime?  @db.Timestamp(0)
-  categories  categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_category_id_foreign")
-  users       users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_user_id_foreign")
+  id            String          @id @db.Uuid
+  user_id       String          @db.Uuid
+  category_id   String          @db.Uuid
+  amount        Decimal         @db.Decimal(15, 2)
+  period        String          @default("monthly") @db.VarChar(255)
+  created_at    DateTime?       @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  categories    categories      @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_category_id_foreign")
+  users         users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_user_id_foreign")
+  budget_alerts budget_alerts[]
 
   @@unique([user_id, category_id, period], map: "budgets_user_id_category_id_period_unique")
 }

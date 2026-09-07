@@ -79,15 +79,22 @@ Prerequisitos técnicos que varias features de las fases siguientes van a necesi
 
 ## Fase 3 — Funcional: sobre lo que ya existe
 
-- [ ] **3.0 — Portar la infraestructura de Web Push** (prerequisito, descubierto sobre la marcha)
+- [x] **3.0 — Portar la infraestructura de Web Push** (prerequisito, descubierto sobre la marcha)
       El PWA **ya intenta suscribirse a push en cada carga** (`AppLayout.tsx` llama a `GET /vapid-public-key` y `POST /push-subscribe`), pero **ninguno de esos endpoints existe en el backend NestJS** — vivían en el backend Laravel que se eliminó (`PushSubscriptionController.php`, `WebPushNotification.php`) y nunca se portaron. Hoy falla en silencio, tragado por un `catch` con `console.error`. Sin esto, las alertas de presupuesto no tienen por dónde salir.
-  - [ ] Generar par de VAPID keys nuevo (las viejas se perdieron con el backend borrado; hay **0 suscripciones** en la BD, así que no se invalida nada).
-  - [ ] Limpiar `push_subscriptions`: reemplazar la forma polimórfica de Laravel (`subscribable_type`/`subscribable_id`) por un `user_id` con FK real a `users` (`onDelete: Cascade`).
-  - [ ] `GET /vapid-public-key` (público) → `{ key }`, y `POST /push-subscribe` (protegido JWT) que guarda/actualiza la suscripción del usuario.
-  - [ ] `PushService` genérico de envío (equivalente al `MailService` de la Fase 0), reutilizable por las alertas de presupuesto y cualquier notificación futura.
+  - [x] Generado par de VAPID keys nuevo (en `.env`, documentado en `.env.example` junto con `VAPID_SUBJECT`). Las viejas se perdieron con el backend borrado; había **0 suscripciones**, así que no se invalidó nada.
+  - [x] `push_subscriptions` limpia: se reemplazó la forma polimórfica de Laravel por `user_id` con FK real a `users` (`onDelete: Cascade`). Migración `20260903152302_clean_push_subscriptions`.
+  - [x] `GET /vapid-public-key` (público) → `{ key }`, y `POST /push-subscribe` (protegido JWT). Respetan el contrato exacto que el frontend ya usaba, sin tocar `queries.ts` ni `AppLayout.tsx`.
+  - [x] `PushService` global (equivalente al `MailService`), con `sendToUser(userId, payload)`. Si faltan las claves VAPID loguea advertencia y deshabilita el envío sin crashear el boot. Borra automáticamente las suscripciones que el navegador reporta como muertas (`410 Gone` / `404`), y un fallo parcial (un dispositivo caído de varios) no tumba el envío completo.
+  - Trampa evitada: el `ValidationPipe` global tiene `forbidNonWhitelisted: true`, así que el DTO declara también `expirationTime` — sin eso, toda suscripción legítima del navegador habría sido rechazada con `400`.
+  - Verificado end-to-end con Docker real: `GET /vapid-public-key` devuelve la clave sin token; `POST /push-subscribe` rechaza sin JWT (`401`), acepta el payload exacto del navegador con `expirationTime: null` (`201`), no duplica al repetir la misma suscripción, y rechaza propiedades extra (`400`, lo que confirma que el whitelist está activo y el caso anterior no pasó por casualidad). La fila queda con `user_id` y `content_encoding = aes128gcm`.
+  - **Limpieza de suscripciones muertas verificada contra un servicio de push real**: `sendToUser` envió de verdad a FCM (Google), que respondió que el endpoint no existía, y el servicio borró la suscripción solo (`{sent: 0, failed: 0, removed: 1}`, tabla en 0). Sin excepción, porque una suscripción revocada es un caso esperado, no un error de envío.
+  - Pendiente menor: no se probó recibir una notificación en un navegador real (requiere suscribirse desde el PWA con permisos de notificación concedidos).
 
-- [ ] **Alertas de presupuesto** (depende de 3.0)
-      Usando `push_subscriptions`: notificar cuando una categoría supera el 80% y el 100% del presupuesto mensual.
+- [x] **Alertas de presupuesto**
+      Umbrales de 80% y 100%, evaluados al crear y actualizar transacciones. Canal excluyente: push si el usuario tiene alguna suscripción activa, correo si no tiene ninguna (plantilla `budget-alert.template.ts`).
+      Anti-repetición con la tabla `budget_alerts` (migración `20260907122354_add_budget_alerts`): un índice único sobre `budget_id + period_key + threshold` es la garantía real, porque corta incluso si dos transacciones cruzan el umbral a la vez — un `findFirst` previo tendría condición de carrera. Un salto directo de 0% a más de 100% avisa una sola vez, no genera el par 80+100.
+      **Bug preexistente corregido**: `checkBudgetWarning` buscaba presupuestos con `period` igual al mes actual en formato `"2026-09"`, pero el esquema define `period` con default `"monthly"` — o sea que los presupuestos creados con el valor por defecto **nunca disparaban aviso**. La lógica de rangos se extrajo de `BudgetsService` a `src/common/budget-period.util.ts`, compartida ahora por ambos módulos, para que el porcentaje que ve el usuario en pantalla y el que dispara la alerta no puedan divergir.
+      Verificado end-to-end por HTTP con Docker real, sobre un presupuesto `monthly` (el caso que estaba roto): 4 transacciones cruzando 50% → 85% → 88% → 113% produjeron **2 alertas**, una por umbral, con las 2 filas correspondientes en `budget_alerts`. Selección de canal verificada en ambas direcciones: sin suscripción llegó el correo, con suscripción salió por push y no se mandó correo. El texto de `warnings` cambió de redacción, pero el frontend solo lo muestra tal cual sin analizarlo (`queries.ts`), así que no rompe nada.
 
 - [ ] **Transacciones recurrentes**
       Nuevo modelo para definir una transacción "plantilla" (monto, categoría, frecuencia) que genera automáticamente el registro real cada período (requiere un job programado — evaluar si usar un cron simple o algo más robusto).
