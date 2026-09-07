@@ -229,6 +229,19 @@ model savings_goals {
   created_at     DateTime? @db.Timestamp(0)
   updated_at     DateTime? @db.Timestamp(0)
   users          users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "savings_goals_user_id_foreign")
+
+  savings_goal_movements savings_goal_movements[]
+}
+
+model savings_goal_movements {
+  id              String        @id @default(uuid()) @db.Uuid
+  savings_goal_id String        @db.Uuid
+  type            String        @db.VarChar(20)
+  amount          Decimal       @db.Decimal(15, 2)
+  created_at      DateTime      @default(now()) @db.Timestamp(0)
+  savings_goals   savings_goals @relation(fields: [savings_goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "savings_goal_movements_goal_id_foreign")
+
+  @@index([savings_goal_id, created_at], map: "savings_goal_movements_goal_created_idx")
 }
 
 model security_logs {

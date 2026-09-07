@@ -22,6 +22,11 @@ export class SavingsGoalsController {
     return this.savingsGoalsService.findOne(id, req.user.id);
   }
 
+  @Get(':id/movements')
+  findMovements(@Request() req: any, @Param('id') id: string) {
+    return this.savingsGoalsService.findMovements(id, req.user.id);
+  }
+
   @Put(':id')
   update(@Request() req: any, @Param('id') id: string, @Body() data: any) {
     return this.savingsGoalsService.update(id, req.user.id, data);
