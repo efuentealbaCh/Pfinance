@@ -49,28 +49,45 @@ Prerequisitos técnicos que varias features de las fases siguientes van a necesi
 
 ## Fase 2 — Seguridad: avanzado
 
-- [ ] **2FA (TOTP)**
-  - [ ] Endpoint para activar 2FA: genera secret, devuelve QR (compatible Google Authenticator/Authy).
-  - [ ] Endpoint para confirmar activación (valida el primer código antes de dejarlo activo).
-  - [ ] Ajustar `login` para pedir el código TOTP cuando el usuario lo tenga activado.
-  - [ ] Endpoint para desactivar 2FA (requiere contraseña actual).
+- [ ] **2FA (TOTP)** (backend cerrado, falta frontend)
+  - [x] `POST /auth/2fa/setup`: genera secret (encriptado con `EncryptionService`, igual que el RUT), devuelve QR (compatible Google Authenticator/Authy) + secret para entrada manual. Opcional, cada usuario lo activa desde su perfil.
+  - [x] `POST /auth/2fa/confirm`: valida el primer código con `otplib` antes de dejarlo activo. Avisa por correo.
+  - [x] `login` ajustado: si el usuario tiene 2FA activo y no manda código, devuelve `401` con `{ requires2fa: true }` (distinguible de credenciales inválidas, sin filtrar nada nuevo — la validación de email+password sigue siendo el primer paso, intacta).
+  - [x] `POST /auth/2fa/disable`: requiere contraseña actual, limpia el secret. Avisa por correo.
   - [ ] Frontend: flujo de activación/desactivación en el perfil, y paso extra de login cuando corresponda.
+  - Verificado end-to-end con Docker real: setup → generación de código TOTP real → confirm → login sin código (pide 2FA) → login con código correcto (token) / incorrecto (rechazado) → disable con password incorrecta (rechazado) / correcta (OK) → login vuelve a la normalidad sin pedir código. Confirmado el envío real de ambos correos de aviso (activación y desactivación) por Brevo.
 
-- [ ] **Notificación de eventos sensibles por correo**
-      Reutilizando el `MailService` de la Fase 0: avisar por correo cuando cambia la contraseña, se activa/desactiva 2FA, o se detecta un login desde un contexto nuevo.
+- [x] **Notificación de eventos sensibles por correo**
+  - [x] Aviso al activar/desactivar 2FA (llegó junto con la implementación de 2FA). Helper `sendSecurityNotice` + plantilla `security-notice.template.ts`.
+  - [x] Aviso al cambiar la contraseña, tanto desde el perfil (`PUT /auth/profile/password`) como por el enlace de recuperación (`POST /auth/reset-password`). Verificado end-to-end con Docker: ambos correos salieron de verdad por Brevo.
+  - [x] Aviso de login desde un contexto nuevo (IP/dispositivo desconocido). Se resolvió junto con la auditoría, usando `security_logs` como único registro de contextos conocidos: antes de guardar el login actual se busca un `login` previo con la misma IP + user agent, y si no hay ninguno sale el aviso. El primer login de la cuenta no avisa nunca (sería ruido justo en el onboarding).
 
 - [ ] **Revocación real de sesiones**
       Evaluar dos caminos: (a) usar la tabla `sessions` existente para llevar sesiones activas server-side e invalidarlas en logout, o (b) migrar a refresh tokens de corta vida + rotación. Definir cuál antes de implementar — son diseños distintos.
 
-- [ ] **Auditoría de acciones sensibles**
-      Extender el patrón de `transaction_logs` a login, cambios de perfil, cambios de contraseña y eliminación de cuentas — útil para detectar accesos indebidos.
+- [x] **Auditoría de acciones sensibles**
+      Tabla `security_logs` (`user_id`, `event`, `ip`, `user_agent`, `created_at`, FK con `ON DELETE CASCADE`) siguiendo el patrón de `transaction_logs`, más el helper `recordSecurityEvent` en `AuthService`. Registra `login`, `password_changed`, `password_reset`, `2fa_enabled`, `2fa_disabled` y `profile_updated`, con IP (`@Ip()`, que ya devuelve la IP real gracias a `trust proxy`) y user agent. El registro nunca tumba la operación principal: si el insert falla solo se loguea, mismo criterio que los envíos de correo.
+      `GET /auth/security-log` devuelve los últimos 50 eventos del propio usuario (el id sale del JWT, nunca de la request).
+      Verificado contra la BD local: el primer login no avisa, repetir IP + user agent tampoco, cambiar user agent o IP sí; un user agent de más de 500 caracteres se recorta en vez de romper el insert; un log fallido no interrumpe el login; y el historial no filtra eventos de otros usuarios.
+      Pendiente: eliminación de cuentas todavía no tiene endpoint, así que ese evento queda para cuando exista.
+
+- [x] **Fix no planeado pero necesario: excluir tablas locales del webhook de sincronización**
+      `PrismaService` replicaba **toda** mutación al entorno remoto cuando `SYNC_TO_REMOTE=true`. Con `security_logs` eso no era solo ruido: los registros de desarrollo pasaban a contar como "contextos conocidos" en producción, con lo cual un acceso indebido desde esa misma IP **dejaría de disparar** el aviso de login nuevo — debilitando justo la protección que la tabla habilita. Se agregó `MODELS_EXCLUDED_FROM_SYNC` con `security_logs`, `email_verification_tokens`, `password_reset_tokens` y `push_subscriptions` (las tres últimas porque sus tokens/claves solo son válidos en el entorno que los generó).
+      Verificado con Docker apuntando el webhook a un endpoint local muerto: un registro + login dispara **un solo** intento de sync (el de `users`), donde antes hubieran sido tres.
 
 ---
 
 ## Fase 3 — Funcional: sobre lo que ya existe
 
-- [ ] **Alertas de presupuesto**
-      Usando `push_subscriptions` (ya existe en el modelo, sin uso hoy): notificar cuando una categoría supera el 80% y el 100% del presupuesto mensual.
+- [ ] **3.0 — Portar la infraestructura de Web Push** (prerequisito, descubierto sobre la marcha)
+      El PWA **ya intenta suscribirse a push en cada carga** (`AppLayout.tsx` llama a `GET /vapid-public-key` y `POST /push-subscribe`), pero **ninguno de esos endpoints existe en el backend NestJS** — vivían en el backend Laravel que se eliminó (`PushSubscriptionController.php`, `WebPushNotification.php`) y nunca se portaron. Hoy falla en silencio, tragado por un `catch` con `console.error`. Sin esto, las alertas de presupuesto no tienen por dónde salir.
+  - [ ] Generar par de VAPID keys nuevo (las viejas se perdieron con el backend borrado; hay **0 suscripciones** en la BD, así que no se invalida nada).
+  - [ ] Limpiar `push_subscriptions`: reemplazar la forma polimórfica de Laravel (`subscribable_type`/`subscribable_id`) por un `user_id` con FK real a `users` (`onDelete: Cascade`).
+  - [ ] `GET /vapid-public-key` (público) → `{ key }`, y `POST /push-subscribe` (protegido JWT) que guarda/actualiza la suscripción del usuario.
+  - [ ] `PushService` genérico de envío (equivalente al `MailService` de la Fase 0), reutilizable por las alertas de presupuesto y cualquier notificación futura.
+
+- [ ] **Alertas de presupuesto** (depende de 3.0)
+      Usando `push_subscriptions`: notificar cuando una categoría supera el 80% y el 100% del presupuesto mensual.
 
 - [ ] **Transacciones recurrentes**
       Nuevo modelo para definir una transacción "plantilla" (monto, categoría, frecuencia) que genera automáticamente el registro real cada período (requiere un job programado — evaluar si usar un cron simple o algo más robusto).

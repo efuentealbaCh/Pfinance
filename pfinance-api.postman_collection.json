@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "Pfinance API — Auth (Fase 0-2)",
+    "description": "Colección de pruebas manuales para verificación de email, recuperación de contraseña, rate limiting y 2FA. Requiere el stack local corriendo (docker compose up -d).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "totpSecret", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Registro",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Mi Usuario de Prueba\",\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ver mi perfil (GET /auth/me)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/auth/me"
+      }
+    },
+    {
+      "name": "4a. Verificación de email — reenviar",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/auth/resend-verification"
+      }
+    },
+    {
+      "name": "4b. Verificación de email — confirmar (pegar el token del link del correo)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/verify-email?token=PEGAR_TOKEN_DEL_LINK_DEL_CORREO_ACA"
+      }
+    },
+    {
+      "name": "5a. Olvidé mi contraseña",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/forgot-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5b. Restablecer contraseña (pegar el token del link del correo)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/reset-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"PEGAR_TOKEN_DEL_LINK_DEL_CORREO_ACA\",\n  \"password\": \"miPasswordNuevaSegura456\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6a. 2FA — Activar (setup, devuelve QR)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/auth/2fa/setup"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.secret) pm.collectionVariables.set('totpSecret', body.secret);",
+              "console.log('Secret (por si no podés escanear el QR):', body.secret);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6b. 2FA — Confirmar (código de tu app autenticadora)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/auth/2fa/confirm",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"PEGAR_CODIGO_DE_6_DIGITOS_DE_TU_APP\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6c. Login con 2FA activo (sin código, debe pedirlo)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6d. Login con 2FA activo (con código)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\",\n  \"code\": \"PEGAR_CODIGO_ACTUAL_DE_TU_APP\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6e. 2FA — Desactivar",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/auth/2fa/disable",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Rate limiting — probar límite de login (correr 6+ veces seguidas)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"noexiste@test.com\",\n  \"password\": \"cualquiera\"\n}"
+        }
+      }
+    }
+  ]
+}

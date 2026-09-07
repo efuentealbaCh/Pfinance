@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
+import { PushModule } from './push/push.module';
 import { AuthModule } from './auth/auth.module';
 import { BanksModule } from './banks/banks.module';
 import { AccountTypesModule } from './account-types/account-types.module';
@@ -31,6 +32,7 @@ import { WebhookModule } from './webhook/webhook.module';
     ]),
     PrismaModule,
     MailModule,
+    PushModule,
     AuthModule,
     BanksModule,
     AccountTypesModule,
