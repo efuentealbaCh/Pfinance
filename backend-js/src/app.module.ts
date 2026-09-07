@@ -18,6 +18,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { SavingsGoalsModule } from './savings-goals/savings-goals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ExportModule } from './export/export.module';
+import { ReportsModule } from './reports/reports.module';
 import { GroupsModule } from './groups/groups.module';
 import { SharedDebtsModule } from './shared-debts/shared-debts.module';
 import { WebhookModule } from './webhook/webhook.module';
@@ -32,7 +33,8 @@ import { WebhookModule } from './webhook/webhook.module';
         limit: 100,
       },
     ]),
-    // Habilita los @Cron del proyecto (hoy: el aviso diario de cuotas recurrentes).
+    // Habilita los @Cron del proyecto (hoy: el aviso diario de cuotas recurrentes y el
+    // resumen mensual del día 1).
     ScheduleModule.forRoot(),
     PrismaModule,
     MailModule,
@@ -48,6 +50,7 @@ import { WebhookModule } from './webhook/webhook.module';
     SavingsGoalsModule,
     DashboardModule,
     ExportModule,
+    ReportsModule,
     GroupsModule,
     SharedDebtsModule,
     WebhookModule,

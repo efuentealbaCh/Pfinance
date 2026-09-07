@@ -113,11 +113,16 @@ Prerequisitos técnicos que varias features de las fases siguientes van a necesi
       **Bug preexistente corregido**: `deposit`/`withdraw` recibían `@Body('amount')` sin validación, así que un monto ausente o no numérico entraba como `NaN` y **corrompía `current_amount`**. Ahora se rechaza con `400`.
       Verificado end-to-end por HTTP con Docker real: meta nueva sin aportes informa honestamente que no hay ritmo; con un abono de $300.000 proyecta 9 meses con fecha concreta y `rate_basis: movements`; con plazo a 6 meses detecta que al ritmo actual llega tarde y sugiere $183.333,33 mensuales; montos inválidos rechazados sin tocar el saldo; y **una meta cuyo único movimiento en ventana es un retiro queda en `stalled` con `rate_basis: movements`**, sin caer al fallback optimista — ese era el error sutil que el agente detectó y resolvió con una segunda consulta agregada.
 
-- [ ] **Resumen mensual por correo**
-      Job programado (día 1 de cada mes) que arma un resumen (ingresos, gastos, balance, comparación con el mes anterior) reutilizando la lógica de export ya existente, y lo manda por correo.
+- [x] **Resumen mensual por correo**
+      Módulo `src/reports/`. Cron el día 1 que envía el resumen del mes cerrado **solo a usuarios con al menos una transacción en ese mes** (no tiene sentido mandar un resumen vacío), procesando de a uno con try/catch individual para que un fallo no corte el envío al resto. Plantilla `monthly-summary.template.ts`.
+      Además de la lógica del roadmap se agregó **`GET /reports/monthly-summary`**, que devuelve el resumen del mes anterior o el de un mes puntual. La razón: en Render gratuito el servicio se duerme y el cron puede no ejecutarse; con el endpoint el resumen no se pierde, el usuario lo ve igual al entrar. Mismo criterio de auto-reparación que las cuotas recurrentes.
+      Verificado end-to-end por HTTP con Docker real: totales correctos (ingresos $900.000, gastos $200.000, balance $700.000), desglose por categoría, y la comparación intermensual bien calculada (gastos $300.000 contra $200.000 del mes previo dio `+50%`, ingresos `-100%`). El caso borde de un mes anterior sin movimientos devuelve `percentage: null`, no infinito ni `NaN`.
 
-- [ ] **Mejoras en deudas compartidas**
-      Sobre `shared_debts` / `shared_debt_splits`: recordatorio de pago pendiente y confirmación de pago recibido entre las partes.
+- [x] **Mejoras en deudas compartidas**
+      **Cambio de comportamiento**: antes el deudor se marcaba como pagado por su cuenta y la deuda quedaba saldada sin que el acreedor supiera nada. Ahora son dos pasos — `PUT /debts/:debtId/pay` **declara** el pago (misma ruta, significado nuevo) y solo `PUT /debts/:debtId/splits/:splitId/confirm` la salda. Migración `20260907142510_add_shared_debt_payment_confirmation`: `is_paid` se conserva como flag final y se suman `payment_declared_at` / `payment_confirmed_at`, así el estado se deriva sin romper lo que ya leía el booleano.
+      Se agregó un endpoint de **rechazo** que no estaba en el roadmap pero hace falta: sin él, una declaración equivocada dejaba la deuda trabada sin salida. El rechazo la devuelve a pendiente y avisa al deudor, con un motivo opcional que viaja en la notificación.
+      Recordatorio semanal por cron **solo a quien debe**, agrupando todas sus deudas pendientes en un único mensaje en vez de uno por deuda, y excluyendo las ya declaradas o saldadas.
+      Verificado end-to-end por HTTP con Docker real, con dos usuarios en un grupo y una deuda al 50/50: declarar deja `is_paid = false`; **el deudor intentando confirmar su propio pago recibe `403`**; el acreedor confirma y recién ahí queda saldada; el rechazo la devuelve a pendiente. Los cuatro correos salieron a la parte correcta en cada paso.
 
 ---
 

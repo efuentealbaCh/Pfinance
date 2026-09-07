@@ -268,17 +268,23 @@ model sessions {
   @@index([user_id], map: "sessions_user_id_index")
 }
 
+/// El pago de un split se salda en dos pasos: el deudor declara que pagó
+/// (`payment_declared_at`) y el acreedor confirma que recibió (`payment_confirmed_at`).
+/// `is_paid` se mantiene como el flag final de "saldado y confirmado" para no romper a los
+/// consumidores que hoy solo miran ese booleano; el estado intermedio se deriva de las fechas.
 model shared_debt_splits {
-  id             String       @id @default(uuid()) @db.Uuid
-  shared_debt_id String       @db.Uuid
-  user_id        String       @db.Uuid
-  percentage     Decimal      @db.Decimal(5, 2)
-  amount_owed    Decimal      @db.Decimal(15, 2)
-  is_paid        Boolean      @default(false)
-  created_at     DateTime?    @db.Timestamp(0)
-  updated_at     DateTime?    @db.Timestamp(0)
-  shared_debts   shared_debts @relation(fields: [shared_debt_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_shared_debt_id_foreign")
-  users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_user_id_foreign")
+  id                   String       @id @default(uuid()) @db.Uuid
+  shared_debt_id       String       @db.Uuid
+  user_id              String       @db.Uuid
+  percentage           Decimal      @db.Decimal(5, 2)
+  amount_owed          Decimal      @db.Decimal(15, 2)
+  is_paid              Boolean      @default(false)
+  payment_declared_at  DateTime?    @db.Timestamp(0)
+  payment_confirmed_at DateTime?    @db.Timestamp(0)
+  created_at           DateTime?    @db.Timestamp(0)
+  updated_at           DateTime?    @db.Timestamp(0)
+  shared_debts         shared_debts @relation(fields: [shared_debt_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_shared_debt_id_foreign")
+  users                users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_user_id_foreign")
 }
 
 model shared_debts {
