@@ -16,12 +16,22 @@ import { PrismaClient } from '@prisma/client';
  *   para nada, y solo esparcen hashes de tokens de un entorno a otro.
  * - `push_subscriptions`: cada suscripción está atada al par de claves VAPID del entorno que la
  *   registró. Una suscripción creada en local es inservible en producción, que tiene otras claves.
+ * - `exchange_rates`: no son datos del usuario sino una copia local de una serie pública. Cada
+ *   entorno la baja por su cuenta de mindicador.cl, y replicarla solo generaría ruido (el
+ *   backfill inicial son cientos de filas) sin aportar nada que producción no pueda traer sola.
+ * - `statement_imports` / `bank_statement_mappings`: son registros de una operación hecha EN este
+ *   entorno. El webhook es fuego y olvido, sin orden garantizado, así que una transacción
+ *   importada podría llegar a producción antes que su lote y romper la llave foránea. Importar
+ *   una cartola es una operación local; allá se importa el archivo de nuevo si hace falta.
  */
 const MODELS_EXCLUDED_FROM_SYNC = new Set([
   'security_logs',
   'email_verification_tokens',
   'password_reset_tokens',
   'push_subscriptions',
+  'exchange_rates',
+  'statement_imports',
+  'bank_statement_mappings',
 ]);
 
 @Injectable()

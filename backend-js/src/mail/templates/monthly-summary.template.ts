@@ -1,4 +1,5 @@
 import { MonthlyVariation } from '../../common/monthly-period.util';
+import { Currency, formatAmount as formatCurrencyAmount } from '../../common/currency.util';
 
 /**
  * Escapa caracteres especiales de HTML para evitar inyección al interpolar
@@ -48,6 +49,8 @@ export interface MonthlySummaryEmailData {
   top_categories: MonthlySummaryCategory[];
   /** Gasto acumulado del resto de las categorías que no entraron en el top. */
   other_categories_total: number;
+  /** Moneda base en la que están expresados todos los montos del resumen. */
+  currency: Currency;
 }
 
 const POSITIVE_COLOR = '#15803d';
@@ -55,15 +58,17 @@ const NEGATIVE_COLOR = '#b91c1c';
 const NEUTRAL_COLOR = '#475569';
 
 /**
- * Formatea un monto en el formato numérico chileno (punto de miles, coma decimal),
- * mostrando decimales solo cuando existen.
+ * Formatea un monto con el símbolo, los separadores y los decimales de su moneda.
+ *
+ * El signo se antepone al símbolo (`-$1.200`, no `$-1.200`) porque es como se lee un saldo
+ * negativo en un estado de cuenta.
+ *
+ * @param value monto a formatear
+ * @param currency moneda base del resumen
+ * @returns el monto listo para insertar en el HTML
  */
-function formatAmount(value: number): string {
-  const formatted = new Intl.NumberFormat('es-CL', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(Math.abs(value));
-  return `${value < 0 ? '-' : ''}$${formatted}`;
+function formatAmount(value: number, currency: Currency): string {
+  return `${value < 0 ? '-' : ''}${formatCurrencyAmount(Math.abs(value), currency)}`;
 }
 
 /**
@@ -77,7 +82,12 @@ function formatAmount(value: number): string {
  * @param previousLabel etiqueta del mes anterior
  * @returns la frase lista para insertar en el HTML
  */
-function variationPhrase(variation: MonthlyVariation, metric: string, previousLabel: string): string {
+function variationPhrase(
+  variation: MonthlyVariation,
+  metric: string,
+  previousLabel: string,
+  currency: Currency,
+): string {
   if (variation.percentage === null) {
     return `No hay movimientos de ${previousLabel} con qué comparar.`;
   }
@@ -85,7 +95,7 @@ function variationPhrase(variation: MonthlyVariation, metric: string, previousLa
     return `Sin cambios respecto de ${previousLabel}.`;
   }
   const verb = variation.direction === 'up' ? 'más' : 'menos';
-  const difference = formatAmount(Math.abs(variation.difference));
+  const difference = formatAmount(Math.abs(variation.difference), currency);
   return `${metric} ${Math.abs(variation.percentage)}% ${verb} que en ${previousLabel} (${difference}).`;
 }
 
@@ -99,6 +109,7 @@ function variationPhrase(variation: MonthlyVariation, metric: string, previousLa
  * @param metric arranque de la frase de comparación
  * @param previousLabel etiqueta del mes anterior
  * @param upIsGood si subir es buena noticia (ingresos) o mala (gastos), para elegir el color
+ * @param currency moneda base del resumen
  * @returns el `<tr>` del bloque
  */
 function metricBlock(
@@ -108,6 +119,7 @@ function metricBlock(
   metric: string,
   previousLabel: string,
   upIsGood: boolean,
+  currency: Currency,
 ): string {
   let color = NEUTRAL_COLOR;
   let arrow = '';
@@ -127,10 +139,10 @@ function metricBlock(
             ${title}
           </p>
           <p style="margin:0 0 6px; font-size:26px; font-weight:bold; color:#0f172a; line-height:1.2;">
-            ${formatAmount(amount)}
+            ${formatAmount(amount, currency)}
           </p>
           <p style="margin:0; font-size:14px; color:${color};">
-            ${arrow}${variationPhrase(variation, metric, previousLabel)}
+            ${arrow}${variationPhrase(variation, metric, previousLabel, currency)}
           </p>
         </td>
       </tr>`;
@@ -166,7 +178,7 @@ export function monthlySummaryContent(name: string, data: MonthlySummaryEmailDat
                 <span style="color:#64748b; font-size:13px;">&nbsp;&middot;&nbsp;${category.percentage}%</span>
               </td>
               <td align="right" style="font-size:15px; font-weight:bold; color:#1e293b; white-space:nowrap;">
-                ${formatAmount(category.total)}
+                ${formatAmount(category.total, data.currency)}
               </td>
             </tr>
           </table>
@@ -184,7 +196,7 @@ export function monthlySummaryContent(name: string, data: MonthlySummaryEmailDat
             <tr>
               <td style="font-size:14px; color:#64748b;">Resto de las categorías</td>
               <td align="right" style="font-size:14px; font-weight:bold; color:#475569; white-space:nowrap;">
-                ${formatAmount(data.other_categories_total)}
+                ${formatAmount(data.other_categories_total, data.currency)}
               </td>
             </tr>
           </table>
@@ -214,15 +226,15 @@ export function monthlySummaryContent(name: string, data: MonthlySummaryEmailDat
     </p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0; border-radius:6px; background-color:#f8fafc;">
-      ${metricBlock('Ingresos', data.income, data.income_variation, 'Ingresaste un', data.previous_month_label, true)}
-      ${metricBlock('Gastos', data.expense, data.expense_variation, 'Gastaste un', data.previous_month_label, false)}
+      ${metricBlock('Ingresos', data.income, data.income_variation, 'Ingresaste un', data.previous_month_label, true, data.currency)}
+      ${metricBlock('Gastos', data.expense, data.expense_variation, 'Gastaste un', data.previous_month_label, false, data.currency)}
       <tr>
         <td style="padding:16px 20px;">
           <p style="margin:0 0 4px; font-size:13px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">
             Balance del mes
           </p>
           <p style="margin:0; font-size:26px; font-weight:bold; color:${balanceColor}; line-height:1.2;">
-            ${formatAmount(data.balance)}
+            ${formatAmount(data.balance, data.currency)}
           </p>
           <p style="margin:6px 0 0; font-size:14px; color:#64748b;">
             ${

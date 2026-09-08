@@ -2,10 +2,12 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { CurrencyService } from '../currency/currency.service';
 import { PushService } from '../push/push.service';
 import { baseEmailTemplate } from '../mail/templates/base.template';
 import { budgetAlertContent } from '../mail/templates/budget-alert.template';
 import { calculateBudgetPercentage, resolveBudgetPeriod } from '../common/budget-period.util';
+import { normalizeCurrency } from '../common/currency.util';
 import { randomUUID } from 'crypto';
 
 /**
@@ -26,6 +28,7 @@ export class TransactionsService {
     private prisma: PrismaService,
     private pushService: PushService,
     private mailService: MailService,
+    private currencyService: CurrencyService,
   ) {}
 
   private mapTransaction(t: any) {
@@ -169,7 +172,7 @@ export class TransactionsService {
       }
     }
 
-    await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), false, transaction.target_account_id, transaction.card_id);
+    await this.adjustAccountBalance(userId, transaction, false);
     await this.logAction(transaction.id, userId, 'CREATE', null, transaction, reqMetadata);
 
     const warnings = await this.checkBudgetWarning(userId, transaction);
@@ -199,7 +202,7 @@ export class TransactionsService {
     }
 
     const before = transaction;
-    await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true, before.target_account_id, before.card_id);
+    await this.adjustAccountBalance(userId, before, true);
 
     const updatedTransaction = await this.prisma.transactions.update({
       where: { id },
@@ -249,7 +252,7 @@ export class TransactionsService {
       }
     }
 
-    await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount), false, updatedTransaction.target_account_id, updatedTransaction.card_id);
+    await this.adjustAccountBalance(userId, updatedTransaction, false);
     await this.logAction(transaction.id, userId, 'UPDATE', before, updatedTransaction, reqMetadata);
 
     const warnings = await this.checkBudgetWarning(userId, updatedTransaction);
@@ -268,7 +271,7 @@ export class TransactionsService {
     if (!transaction) throw new NotFoundException('Transaction not found');
 
     await this.logAction(transaction.id, userId, 'DELETE', transaction, null, reqMetadata);
-    await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true, transaction.target_account_id, transaction.card_id);
+    await this.adjustAccountBalance(userId, transaction, true);
 
     await this.prisma.transactions.delete({ where: { id } });
 
@@ -291,7 +294,38 @@ export class TransactionsService {
     });
   }
 
-  private async adjustAccountBalance(userId: string, accountId: string, type: string, amount: number, revert = false, targetAccountId: string | null = null, cardId: string | null = null) {
+  /**
+   * Aplica (o revierte) el efecto de una transacción sobre el saldo de la cuenta, la cuenta
+   * destino si es transferencia, y la tarjeta asociada.
+   *
+   * Recibe la transacción entera en vez de sus campos sueltos porque los cuatro puntos que la
+   * llaman le pasan siempre el mismo objeto, y con siete parámetros posicionales era fácil
+   * cruzar dos por error.
+   *
+   * En una transferencia entre cuentas de distinta moneda, el monto sale de la cuenta origen en
+   * SU moneda y se acredita en la destino convertido con la cotización de la fecha de la
+   * transacción. Como las cotizaciones ya cargadas son inmutables, revertir la misma transacción
+   * más tarde recalcula exactamente el mismo monto convertido y el saldo vuelve a cuadrar.
+   *
+   * @param userId dueño de las cuentas involucradas
+   * @param transaction transacción a aplicar o revertir
+   * @param revert `true` para deshacer el efecto (edición o borrado)
+   */
+  private async adjustAccountBalance(
+    userId: string,
+    transaction: {
+      user_account_id: string;
+      target_account_id: string | null;
+      type: string;
+      amount: Prisma.Decimal | number;
+      card_id: string | null;
+      date: Date;
+    },
+    revert = false,
+  ) {
+    const { user_account_id: accountId, target_account_id: targetAccountId, type, card_id: cardId, date } = transaction;
+    const amount = Number(transaction.amount);
+
     const account = await this.prisma.user_accounts.findFirst({ where: { id: accountId, user_id: userId } });
     if (!account) return;
 
@@ -310,8 +344,14 @@ export class TransactionsService {
       if (targetAccountId) {
         const targetAccount = await this.prisma.user_accounts.findFirst({ where: { id: targetAccountId, user_id: userId } });
         if (targetAccount) {
+          const credited = await this.currencyService.convert(
+            amount,
+            normalizeCurrency(account.currency),
+            normalizeCurrency(targetAccount.currency),
+            date,
+          );
           let targetBalance = Number(targetAccount.balance);
-          targetBalance += (amount * factor);
+          targetBalance += (credited * factor);
           await this.prisma.user_accounts.update({
             where: { id: targetAccountId },
             data: { balance: targetBalance },
@@ -326,12 +366,14 @@ export class TransactionsService {
     });
 
     if (cardId) {
+      // La tarjeta pertenece a la cuenta origen, así que comparte su moneda: acá nunca hay
+      // conversión, ni siquiera en una transferencia a una cuenta en otra moneda.
       const card = await this.prisma.cards.findFirst({ where: { id: cardId, user_account_id: accountId } });
       if (card) {
         let cardBalance = Number(card.balance);
         if (type === 'income') cardBalance += (amount * factor);
         else if (type === 'expense' || type === 'transfer') cardBalance -= (amount * factor);
-        
+
         await this.prisma.cards.update({
           where: { id: cardId },
           data: { balance: cardBalance },

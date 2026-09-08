@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from '../dashboard/dashboard.service';
+import { CurrencyService } from '../currency/currency.service';
 import { MailService } from '../mail/mail.service';
 import { baseEmailTemplate } from '../mail/templates/base.template';
 import { MonthlySummaryEmailData, monthlySummaryContent } from '../mail/templates/monthly-summary.template';
@@ -12,6 +13,7 @@ import {
   previousMonthKey,
   resolveMonthPeriod,
 } from '../common/monthly-period.util';
+import { roundToCurrency } from '../common/currency.util';
 
 /**
  * Día 1 de cada mes a las 09:00 (hora del servidor), el mismo horario que el aviso diario de
@@ -37,6 +39,7 @@ export class ReportsService {
     private prisma: PrismaService,
     private dashboardService: DashboardService,
     private mailService: MailService,
+    private currencyService: CurrencyService,
   ) {}
 
   /**
@@ -69,9 +72,18 @@ export class ReportsService {
 
     const previousPeriod = resolveMonthPeriod(previousMonthKey(period.key));
 
+    // La moneda base se resuelve una sola vez y se pasa a ambos períodos: si los dos meses se
+    // convirtieran por separado y el usuario cambiara su moneda entremedio, la comparación
+    // mezclaría escalas distintas y el porcentaje de variación no significaría nada.
+    const baseCurrency = await this.currencyService.getUserBaseCurrency(userId);
+
     const [current, previous, transactionsCount] = await Promise.all([
-      this.dashboardService.getPeriodTotals(userId, { date_from: period.from, date_to: period.to }),
-      this.dashboardService.getPeriodTotals(userId, { date_from: previousPeriod.from, date_to: previousPeriod.to }),
+      this.dashboardService.getPeriodTotals(userId, { date_from: period.from, date_to: period.to }, baseCurrency),
+      this.dashboardService.getPeriodTotals(
+        userId,
+        { date_from: previousPeriod.from, date_to: previousPeriod.to },
+        baseCurrency,
+      ),
       this.countMovements(userId, period),
     ]);
 
@@ -88,6 +100,9 @@ export class ReportsService {
     return {
       month: period,
       previous_month: previousPeriod,
+      // Todos los montos del resumen están expresados en esta moneda, sin importar en qué
+      // moneda esté cada cuenta que los originó.
+      currency: current.currency,
       totals: {
         income: current.totalIncome,
         expense: current.totalExpense,
@@ -236,7 +251,8 @@ export class ReportsService {
       income_variation: summary.comparison.income,
       expense_variation: summary.comparison.expense,
       top_categories: topCategories,
-      other_categories_total: Number(otherCategoriesTotal.toFixed(2)),
+      other_categories_total: roundToCurrency(otherCategoriesTotal, summary.currency),
+      currency: summary.currency,
     };
   }
 
