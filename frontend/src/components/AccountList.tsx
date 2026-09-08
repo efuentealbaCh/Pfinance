@@ -1,5 +1,4 @@
 import {
-  Text,
   Group,
   Badge,
   ActionIcon,
@@ -9,8 +8,10 @@ import {
   Accordion,
   CopyButton,
   Divider,
+  Text,
 } from '@mantine/core';
 import { IconCopy, IconCheck, IconEdit, IconTrash, IconCreditCard } from '@tabler/icons-react';
+import Money from './Money';
 import { useAuth } from '../context/AuthContext';
 
 interface CardData {
@@ -19,6 +20,8 @@ interface CardData {
   type: string;
   last_four: string;
   balance: string;
+  /** Moneda de la tarjeta (hereda de la cuenta). Ej: 'CLP', 'USD' */
+  currency?: string;
 }
 
 interface Account {
@@ -27,6 +30,8 @@ interface Account {
   balance: string;
   bank_id: string;
   account_type_id: string;
+  /** Moneda de la cuenta, ej: 'CLP' o 'USD'. Default 'CLP'. */
+  currency?: string;
   bank: { id: string; name: string; logo?: string | null };
   account_type: { id: string; name: string };
   cards?: CardData[];
@@ -87,9 +92,14 @@ ${user?.email || 'Email no disponible'}`;
                 )}
               </div>
               <Group gap="xs" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
-                <Text fw={700} size="lg" c="teal" style={{ whiteSpace: 'nowrap', marginRight: '8px' }}>
-                  ${Number(account.balance).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
-                </Text>
+                <Money
+                  amount={Number(account.balance)}
+                  currency={account.currency}
+                  fw={700}
+                  size="lg"
+                  c="teal"
+                  style={{ whiteSpace: 'nowrap', marginRight: '8px' }}
+                />
 
                 <CopyButton value={formatCopyData(account)} timeout={2000}>
                   {({ copied, copy }) => (
@@ -136,9 +146,13 @@ ${user?.email || 'Email no disponible'}`;
                         </Text>
                       </div>
                     </Group>
-                    <Text fw={600} size="sm" c={card.type === 'credit' ? 'blue' : 'green'}>
-                      ${Number(card.balance).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
-                    </Text>
+                    <Money
+                      amount={Number(card.balance)}
+                      currency={card.currency}
+                      fw={600}
+                      size="sm"
+                      c={card.type === 'credit' ? 'blue' : 'green'}
+                    />
                   </Group>
                 ))}
               </Stack>

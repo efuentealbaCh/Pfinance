@@ -32,6 +32,7 @@ import {
     Legend,
 } from 'recharts';
 import { notifications } from '@mantine/notifications';
+import { formatMoney } from '../utils/money';
 import {
     IconTrendingUp,
     IconChartBar,
@@ -117,7 +118,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                     title: b.percentage >= 100
                         ? `Presupuesto excedido: ${b.category_name}`
                         : `Presupuesto al límite: ${b.category_name}`,
-                    message: `Has gastado ${formatCurrency(b.spent)} de ${formatCurrency(b.amount)} (${b.percentage}%)`,
+                    message: `Has gastado ${formatMoney(b.spent, 'CLP')} de ${formatMoney(b.amount, 'CLP')} (${b.percentage}%)`,
                     color: b.percentage >= 100 ? 'red' : 'orange',
                     icon: b.percentage >= 100 ? <IconBan size={20} /> : <IconAlertTriangle size={20} />,
                     autoClose: 8000,
@@ -127,9 +128,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
         }
     }, [budgetProgress, alertsShown]);
 
-    // Formateador para pesos chilenos
-    const formatCurrency = (value: number) =>
-        '$' + value.toLocaleString('es-CL');
+    // formatMoney importado desde utils/money — no se define localmente
 
     // Custom Tooltip para el AreaChart
     const CustomTooltip = ({ active, payload, label }: any) => {
@@ -151,7 +150,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     {nameLabel}
                                 </Text>
                                 <Text size="xs" fw={700}>
-                                    {formatCurrency(entry.value)}
+                                    {formatMoney(entry.value, 'CLP')}
                                 </Text>
                             </Group>
                         );
@@ -254,7 +253,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         ingresos Totales
                     </Text>
                     <Text fw={700} size="xl" c="teal">
-                        {formatCurrency(summary.totalIncome)}
+                        {formatMoney(summary.totalIncome, 'CLP')}
                     </Text>
                 </Paper>
                 <Paper withBorder p="xl" radius="md">
@@ -262,7 +261,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         gastos Totales
                     </Text>
                     <Text fw={700} size="xl" c="red">
-                        {formatCurrency(summary.totalExpense)}
+                        {formatMoney(summary.totalExpense, 'CLP')}
                     </Text>
                 </Paper>
                 <Paper withBorder p="xl" radius="md">
@@ -270,7 +269,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         Balance Neto
                     </Text>
                     <Text fw={700} size="xl" c={summary.balance >= 0 ? 'teal' : 'red'}>
-                        {formatCurrency(summary.balance)}
+                        {formatMoney(summary.balance, 'CLP')}
                     </Text>
                 </Paper>
             </SimpleGrid>
@@ -311,7 +310,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                         tickMargin={10}
                                     />
                                     <YAxis
-                                        tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                                        tickFormatter={(val) => formatMoney(val, 'CLP', { compact: true })}
                                         stroke="#5C5F66"
                                         fontSize={12}
                                     />
@@ -353,7 +352,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                         tickMargin={10}
                                     />
                                     <YAxis
-                                        tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                                        tickFormatter={(val) => formatMoney(val, 'CLP', { compact: true })}
                                         stroke="#5C5F66"
                                         fontSize={12}
                                     />
@@ -398,7 +397,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#1A1B1E', borderColor: '#2C2E33', borderRadius: 8 }}
                                         itemStyle={{ color: '#C1C2C5' }}
-                                        formatter={(value: any) => formatCurrency(value)}
+                                        formatter={(value: any) => formatMoney(value, 'CLP')}
                                     />
                                     <Legend
                                         layout="vertical"
@@ -458,7 +457,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                             </Group>
                                             <Group gap="xs">
                                                 <Text size="xs" c="dimmed">
-                                                    {formatCurrency(b.spent)} / {formatCurrency(b.amount)}
+                                                    {formatMoney(b.spent, 'CLP')} / {formatMoney(b.amount, 'CLP')}
                                                 </Text>
                                                 <Text size="sm" fw={700} c={color}>
                                                     {b.percentage}%
@@ -510,7 +509,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                             </Group>
                                             <Group gap="xs">
                                                 <Text size="xs" c="dimmed">
-                                                    {formatCurrency(g.current_amount)} / {formatCurrency(g.target_amount)}
+                                                    {formatMoney(g.current_amount, 'CLP')} / {formatMoney(g.target_amount, 'CLP')}
                                                 </Text>
                                                 <Text size="sm" fw={700} c={color}>
                                                     {g.percentage}%

@@ -24,6 +24,7 @@ import {
 } from "@tabler/icons-react";
 import { useBudgets, useDeleteBudget } from "../api/queries";
 import BudgetModal from "../components/BudgetModal";
+import { formatMoney } from "../utils/money";
 
 interface BudgetData {
   id: string;
@@ -55,9 +56,6 @@ function getProgressColor(percentage: number): string {
   return "teal";
 }
 
-function formatCurrency(value: number): string {
-  return "$" + value.toLocaleString("es-CL", { minimumFractionDigits: 0 });
-}
 
 export default function BudgetsPage() {
   const { data: budgetsResponse, isError } = useBudgets();
@@ -235,10 +233,10 @@ export default function BudgetsPage() {
                     {/* Amount info */}
                     <Group justify="space-between" mb={6}>
                       <Text size="xs" c="dimmed">
-                        {formatCurrency(budget.spent)} gastado
+                        {formatMoney(budget.spent, 'CLP')} gastado
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {formatCurrency(budget.amount)} límite
+                        {formatMoney(budget.amount, 'CLP')} límite
                       </Text>
                     </Group>
 
