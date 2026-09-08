@@ -18,6 +18,7 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconChartBar,
   IconCoin,
+  IconFileImport,
   IconTag,
   IconClipboardList,
   IconTarget,
@@ -36,6 +37,7 @@ type TablerIconComponent = ComponentType<{ size?: number | string; color?: strin
 const NAV_ITEMS: { label: string; icon: TablerIconComponent; path: string }[] = [
   { label: "Dashboard", icon: IconChartBar, path: "/dashboard" },
   { label: "Transacciones", icon: IconCoin, path: "/transactions" },
+  { label: "Importar cartola", icon: IconFileImport, path: "/import" },
   { label: "Categorías", icon: IconTag, path: "/categories" },
   { label: "Presupuestos", icon: IconClipboardList, path: "/budgets" },
   { label: "Metas", icon: IconTarget, path: "/savings" },

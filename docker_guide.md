@@ -12,13 +12,13 @@
 # Desde la raíz del proyecto (donde está docker-compose.yml)
 docker-compose up -d
 ```
-> `-d` = modo *detached* (segundo plano). Los 3 servicios subirán: `pfinance_db`, `pfinance_backend`, `pfinance_frontend`.
+> `-d` = modo *detached* (segundo plano). Los 3 servicios subirán: `pfinance_db`, `pfinance_backend_js`, `pfinance_frontend`.
 
 ### URLs de acceso
 | Servicio | URL |
 |---|---|
-| Frontend (React) | http://localhost:5173 |
-| Backend (Laravel API) | http://localhost:8000 |
+| Frontend (React + Vite) | http://localhost:5173 |
+| Backend (NestJS API) | http://localhost:3000/api |
 | PostgreSQL | localhost:5432 |
 
 ### Flujo de trabajo diario
@@ -34,7 +34,7 @@ docker-compose ps
 docker-compose logs -f
 
 # Ver logs solo del backend
-docker-compose logs -f backend
+docker-compose logs -f backend-js
 
 # Ver logs solo del frontend
 docker-compose logs -f frontend
@@ -43,37 +43,35 @@ docker-compose logs -f frontend
 docker-compose down
 ```
 
-### Comandos Laravel dentro del contenedor
+### Comandos Prisma / NestJS dentro del contenedor
 
 ```bash
-# Ejecutar migraciones
-docker-compose exec backend php artisan migrate
+# Aplicar migraciones pendientes
+docker-compose exec backend-js npx prisma migrate dev
 
-# Rollback de migraciones
-docker-compose exec backend php artisan migrate:rollback
+# Generar el cliente de Prisma (tras cambios en schema.prisma)
+docker-compose exec backend-js npx prisma generate
 
-# Seeders / datos de prueba
-docker-compose exec backend php artisan db:seed
+# Cargar datos de prueba (bancos, tipos de cuenta, etc. — ver prisma/seed.ts)
+docker-compose exec backend-js npx prisma db seed
 
-# Limpiar caché
-docker-compose exec backend php artisan cache:clear
-docker-compose exec backend php artisan config:clear
-docker-compose exec backend php artisan route:clear
+# Abrir Prisma Studio (explorador visual de la BD) en el navegador
+docker-compose exec backend-js npx prisma studio
 
-# Abrir consola interactiva de Laravel (Tinker)
-docker-compose exec backend php artisan tinker
+# Ver el estado de las migraciones
+docker-compose exec backend-js npx prisma migrate status
 
-# Ver todas las rutas registradas
-docker-compose exec backend php artisan route:list
-
-# Instalar una nueva dependencia PHP (Composer)
-docker-compose exec backend composer require nombre/paquete
+# Abrir una shell dentro del contenedor del backend
+docker-compose exec backend-js sh
 ```
 
 ### Comandos Node/npm dentro del contenedor
 
 ```bash
-# Instalar una nueva dependencia npm
+# Instalar una nueva dependencia npm (backend)
+docker-compose exec backend-js npm install nombre-paquete
+
+# Instalar una nueva dependencia npm (frontend)
 docker-compose exec frontend npm install nombre-paquete
 
 # Ejecutar lint
@@ -99,14 +97,14 @@ docker-compose exec db psql -U pfinance_user -d pfinance
 docker-compose up -d --build
 
 # Reconstruir solo uno
-docker-compose up -d --build backend
+docker-compose up -d --build backend-js
 docker-compose up -d --build frontend
 ```
 
 ### Reiniciar un servicio específico
 
 ```bash
-docker-compose restart backend
+docker-compose restart backend-js
 docker-compose restart frontend
 docker-compose restart db
 ```
@@ -116,7 +114,8 @@ docker-compose restart db
 ```bash
 docker-compose down -v   # -v elimina los volúmenes (base de datos)
 docker-compose up -d --build
-docker-compose exec backend php artisan migrate --seed
+docker-compose exec backend-js npx prisma migrate deploy
+docker-compose exec backend-js npx prisma db seed
 ```
 
 ---
@@ -248,8 +247,8 @@ docker-compose down -v
 # Ver logs de todos los servicios
 docker-compose logs -f
 
-# Escalar un servicio (ej: 3 instancias de backend)
-docker-compose up -d --scale backend=3
+# Escalar un servicio (ej: 3 instancias del backend)
+docker-compose up -d --scale backend-js=3
 ```
 
 #### Inspección y diagnóstico
@@ -359,10 +358,10 @@ docker inspect --format='{{json .State.Health}}' pfinance_db
 #### Comandos de red avanzados
 ```bash
 # Ver IP de un contenedor
-docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' pfinance_backend
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' pfinance_backend_js
 
 # Ejecutar prueba de conectividad entre contenedores
-docker exec pfinance_backend ping db
+docker exec pfinance_backend_js ping db
 ```
 
 #### Docker Compose avanzado
@@ -374,7 +373,7 @@ docker-compose -f docker-compose.prod.yml up -d
 docker-compose config
 
 # Ver variables de entorno de un servicio
-docker-compose exec backend env
+docker-compose exec backend-js env
 
 # Forzar recreación de contenedores
 docker-compose up -d --force-recreate
@@ -391,9 +390,10 @@ docker-compose config --services
 |---|---|
 | Levantar todo | `docker-compose up -d` |
 | Ver estado | `docker-compose ps` |
-| Logs backend | `docker-compose logs -f backend` |
-| Migrar BD | `docker-compose exec backend php artisan migrate` |
-| Consola Laravel | `docker-compose exec backend php artisan tinker` |
+| Logs backend | `docker-compose logs -f backend-js` |
+| Migrar BD | `docker-compose exec backend-js npx prisma migrate dev` |
+| Cargar datos de prueba | `docker-compose exec backend-js npx prisma db seed` |
+| Prisma Studio | `docker-compose exec backend-js npx prisma studio` |
 | Consola PostgreSQL | `docker-compose exec db psql -U pfinance_user -d pfinance` |
 | Reconstruir | `docker-compose up -d --build` |
 | Apagar todo | `docker-compose down` |

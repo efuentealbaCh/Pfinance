@@ -17,26 +17,39 @@ model account_types {
 }
 
 model banks {
-  id                 String               @id @db.Uuid
-  name               String               @unique(map: "banks_name_unique") @db.VarChar(255)
-  logo               String?              @db.VarChar(255)
-  created_at         DateTime?            @db.Timestamp(0)
-  updated_at         DateTime?            @db.Timestamp(0)
-  user_accounts      user_accounts[]
-  bank_account_types bank_account_types[]
+  id                      String                    @id @db.Uuid
+  name                    String                    @unique(map: "banks_name_unique") @db.VarChar(255)
+  logo                    String?                   @db.VarChar(255)
+  created_at              DateTime?                 @db.Timestamp(0)
+  updated_at              DateTime?                 @db.Timestamp(0)
+  user_accounts           user_accounts[]
+  bank_account_types      bank_account_types[]
+  bank_statement_mappings bank_statement_mappings[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model budget_alerts {
+  id         String   @id @default(uuid()) @db.Uuid
+  budget_id  String   @db.Uuid
+  period_key String   @db.VarChar(20)
+  threshold  Int
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  budgets    budgets  @relation(fields: [budget_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "budget_alerts_budget_id_foreign")
+
+  @@unique([budget_id, period_key, threshold], map: "budget_alerts_budget_period_threshold_unique")
+}
+
 model budgets {
-  id          String     @id @db.Uuid
-  user_id     String     @db.Uuid
-  category_id String     @db.Uuid
-  amount      Decimal    @db.Decimal(15, 2)
-  period      String     @default("monthly") @db.VarChar(255)
-  created_at  DateTime?  @db.Timestamp(0)
-  updated_at  DateTime?  @db.Timestamp(0)
-  categories  categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_category_id_foreign")
-  users       users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_user_id_foreign")
+  id            String          @id @db.Uuid
+  user_id       String          @db.Uuid
+  category_id   String          @db.Uuid
+  amount        Decimal         @db.Decimal(15, 2)
+  period        String          @default("monthly") @db.VarChar(255)
+  created_at    DateTime?       @db.Timestamp(0)
+  updated_at    DateTime?       @db.Timestamp(0)
+  categories    categories      @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_category_id_foreign")
+  users         users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "budgets_user_id_foreign")
+  budget_alerts budget_alerts[]
 
   @@unique([user_id, category_id, period], map: "budgets_user_id_category_id_period_unique")
 }
@@ -58,14 +71,52 @@ model cache_locks {
 }
 
 model categories {
-  id           String         @id @db.Uuid
-  name         String         @db.VarChar(255)
-  icon         String?        @db.VarChar(255)
-  color        String?        @db.VarChar(255)
-  created_at   DateTime?      @db.Timestamp(0)
-  updated_at   DateTime?      @db.Timestamp(0)
-  budgets      budgets[]
-  transactions transactions[]
+  id                     String                   @id @db.Uuid
+  name                   String                   @db.VarChar(255)
+  icon                   String?                  @db.VarChar(255)
+  color                  String?                  @db.VarChar(255)
+  created_at             DateTime?                @db.Timestamp(0)
+  updated_at             DateTime?                @db.Timestamp(0)
+  budgets                budgets[]
+  transactions           transactions[]
+  recurring_transactions recurring_transactions[]
+}
+
+/// Cotizaciones usadas para convertir montos entre monedas.
+///
+/// Se guarda una fila por fecha y par de monedas en vez de un único "valor actual", porque los
+/// reportes de meses pasados tienen que dar siempre el mismo número: si se convirtiera todo con
+/// el dólar de hoy, el resumen de agosto cambiaría cada vez que se abre.
+///
+/// Las filas son inmutables una vez escritas — el cron nunca pisa una fecha ya cargada. De eso
+/// depende que revertir una transacción (al editarla o borrarla) descuente exactamente el mismo
+/// monto convertido que sumó al crearse; si la cotización de esa fecha cambiara, los saldos
+/// quedarían con una diferencia imposible de rastrear.
+model exchange_rates {
+  id             String   @id @default(uuid()) @db.Uuid
+  /// Fecha de la cotización (hora de Chile). No hay filas para sábados, domingos ni feriados.
+  date           DateTime @db.Date
+  /// Moneda que se cotiza, p. ej. `USD`.
+  base_currency  String   @db.VarChar(3)
+  /// Moneda en la que se expresa `rate`, p. ej. `CLP`.
+  quote_currency String   @db.VarChar(3)
+  /// Cuántas unidades de `quote_currency` vale 1 de `base_currency`.
+  rate           Decimal  @db.Decimal(18, 6)
+  /// Origen del dato: `mindicador` (cron automático) o `manual`.
+  source         String   @db.VarChar(20)
+  created_at     DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([date, base_currency, quote_currency], map: "exchange_rates_date_pair_unique")
+  @@index([base_currency, quote_currency, date], map: "exchange_rates_pair_date_idx")
+}
+
+model email_verification_tokens {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @unique @db.Uuid
+  token_hash String   @db.VarChar(255)
+  expires_at DateTime @db.Timestamp(0)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "email_verification_tokens_user_id_foreign")
 }
 
 model failed_jobs {
@@ -135,9 +186,10 @@ model migrations {
 }
 
 model password_reset_tokens {
-  email      String    @id @db.VarChar(255)
-  token      String    @db.VarChar(255)
-  created_at DateTime? @db.Timestamp(0)
+  email      String   @id @db.VarChar(255)
+  token_hash String   @db.VarChar(255)
+  expires_at DateTime @db.Timestamp(0)
+  created_at DateTime @default(now()) @db.Timestamp(0)
 }
 
 model personal_access_tokens {
@@ -157,17 +209,41 @@ model personal_access_tokens {
 }
 
 model push_subscriptions {
-  id                String    @id @default(uuid()) @db.Uuid
-  subscribable_type String    @db.VarChar(255)
-  subscribable_id   String    @db.Uuid
-  endpoint          String    @unique(map: "push_subscriptions_endpoint_unique") @db.VarChar(500)
-  public_key        String?   @db.VarChar(255)
-  auth_token        String?   @db.VarChar(255)
-  content_encoding  String?   @db.VarChar(255)
-  created_at        DateTime? @db.Timestamp(0)
-  updated_at        DateTime? @db.Timestamp(0)
+  id               String    @id @default(uuid()) @db.Uuid
+  user_id          String    @db.Uuid
+  endpoint         String    @unique(map: "push_subscriptions_endpoint_unique") @db.VarChar(500)
+  public_key       String?   @db.VarChar(255)
+  auth_token       String?   @db.VarChar(255)
+  content_encoding String?   @db.VarChar(255)
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "push_subscriptions_user_id_foreign")
 
-  @@index([subscribable_type, subscribable_id], map: "push_subscriptions_subscribable_morph_idx")
+  @@index([user_id], map: "push_subscriptions_user_id_index")
+}
+
+model recurring_transactions {
+  id                     String        @id @default(uuid()) @db.Uuid
+  user_id                String        @db.Uuid
+  user_account_id        String        @db.Uuid
+  category_id            String?       @db.Uuid
+  type                   String        @db.VarChar(20)
+  amount                 Decimal       @db.Decimal(15, 2)
+  description            String?       @db.VarChar(255)
+  frequency              String        @db.VarChar(20)
+  start_date             DateTime      @db.Date
+  next_run_date          DateTime      @db.Date
+  installments_total     Int?
+  installments_generated Int           @default(0)
+  active                 Boolean       @default(true)
+  created_at             DateTime      @default(now()) @db.Timestamp(0)
+  updated_at             DateTime      @default(now()) @db.Timestamp(0)
+  categories             categories?   @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "recurring_transactions_category_id_foreign")
+  user_accounts          user_accounts @relation(fields: [user_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "recurring_transactions_user_account_id_foreign")
+  users                  users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "recurring_transactions_user_id_foreign")
+
+  @@index([user_id], map: "recurring_transactions_user_id_index")
+  @@index([active, next_run_date], map: "recurring_transactions_active_next_run_date_index")
 }
 
 model savings_goals {
@@ -182,6 +258,31 @@ model savings_goals {
   created_at     DateTime? @db.Timestamp(0)
   updated_at     DateTime? @db.Timestamp(0)
   users          users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "savings_goals_user_id_foreign")
+
+  savings_goal_movements savings_goal_movements[]
+}
+
+model savings_goal_movements {
+  id              String        @id @default(uuid()) @db.Uuid
+  savings_goal_id String        @db.Uuid
+  type            String        @db.VarChar(20)
+  amount          Decimal       @db.Decimal(15, 2)
+  created_at      DateTime      @default(now()) @db.Timestamp(0)
+  savings_goals   savings_goals @relation(fields: [savings_goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "savings_goal_movements_goal_id_foreign")
+
+  @@index([savings_goal_id, created_at], map: "savings_goal_movements_goal_created_idx")
+}
+
+model security_logs {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  event      String   @db.VarChar(50)
+  ip         String?  @db.VarChar(45)
+  user_agent String?  @db.VarChar(500)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "security_logs_user_id_foreign")
+
+  @@index([user_id, created_at], map: "security_logs_user_id_created_at_idx")
 }
 
 model sessions {
@@ -196,17 +297,23 @@ model sessions {
   @@index([user_id], map: "sessions_user_id_index")
 }
 
+/// El pago de un split se salda en dos pasos: el deudor declara que pagó
+/// (`payment_declared_at`) y el acreedor confirma que recibió (`payment_confirmed_at`).
+/// `is_paid` se mantiene como el flag final de "saldado y confirmado" para no romper a los
+/// consumidores que hoy solo miran ese booleano; el estado intermedio se deriva de las fechas.
 model shared_debt_splits {
-  id             String       @id @default(uuid()) @db.Uuid
-  shared_debt_id String       @db.Uuid
-  user_id        String       @db.Uuid
-  percentage     Decimal      @db.Decimal(5, 2)
-  amount_owed    Decimal      @db.Decimal(15, 2)
-  is_paid        Boolean      @default(false)
-  created_at     DateTime?    @db.Timestamp(0)
-  updated_at     DateTime?    @db.Timestamp(0)
-  shared_debts   shared_debts @relation(fields: [shared_debt_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_shared_debt_id_foreign")
-  users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_user_id_foreign")
+  id                   String       @id @default(uuid()) @db.Uuid
+  shared_debt_id       String       @db.Uuid
+  user_id              String       @db.Uuid
+  percentage           Decimal      @db.Decimal(5, 2)
+  amount_owed          Decimal      @db.Decimal(15, 2)
+  is_paid              Boolean      @default(false)
+  payment_declared_at  DateTime?    @db.Timestamp(0)
+  payment_confirmed_at DateTime?    @db.Timestamp(0)
+  created_at           DateTime?    @db.Timestamp(0)
+  updated_at           DateTime?    @db.Timestamp(0)
+  shared_debts         shared_debts @relation(fields: [shared_debt_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_shared_debt_id_foreign")
+  users                users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "shared_debt_splits_user_id_foreign")
 }
 
 model shared_debts {
@@ -242,43 +349,110 @@ model transaction_logs {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model transactions {
-  id                String             @id @db.Uuid
-  user_id           String             @db.Uuid
-  user_account_id   String             @db.Uuid
-  target_account_id String?            @db.Uuid
-  category_id       String?            @db.Uuid
-  amount            Decimal            @db.Decimal(15, 2)
-  description       String?
-  date              DateTime           @db.Date
-  type              String             @db.VarChar(255)
-  is_shared         Boolean            @default(true)
-  card_id           String?            @db.Uuid
-  created_at        DateTime?          @db.Timestamp(0)
-  updated_at        DateTime?          @db.Timestamp(0)
-  transaction_logs  transaction_logs[]
-  categories        categories?        @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_category_id_foreign")
-  user_accounts     user_accounts      @relation("transactions_user_account", fields: [user_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_account_id_foreign")
-  target_accounts   user_accounts?     @relation("transactions_target_account", fields: [target_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users             users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_id_foreign")
-  cards             cards?             @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  shared_debts      shared_debts[]
+  id                  String             @id @db.Uuid
+  user_id             String             @db.Uuid
+  user_account_id     String             @db.Uuid
+  target_account_id   String?            @db.Uuid
+  category_id         String?            @db.Uuid
+  amount              Decimal            @db.Decimal(15, 2)
+  description         String?
+  date                DateTime           @db.Date
+  type                String             @db.VarChar(255)
+  is_shared           Boolean            @default(true)
+  card_id             String?            @db.Uuid
+  /// Lote de importación del que vino, o `null` si se cargó a mano. Permite deshacer una
+  /// importación completa sin tener que adivinar qué transacciones trajo.
+  statement_import_id String?            @db.Uuid
+  /// Huella de la fila de cartola que originó esta transacción, para no importarla dos veces.
+  /// `null` en las transacciones cargadas a mano.
+  import_fingerprint  String?            @db.VarChar(64)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  transaction_logs    transaction_logs[]
+  statement_imports   statement_imports? @relation(fields: [statement_import_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  categories          categories?        @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_category_id_foreign")
+  user_accounts       user_accounts      @relation("transactions_user_account", fields: [user_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_account_id_foreign")
+  target_accounts     user_accounts?     @relation("transactions_target_account", fields: [target_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users               users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transactions_user_id_foreign")
+  cards               cards?             @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shared_debts        shared_debts[]
+
+  /// Es la deduplicación de las importaciones, hecha por la base y no por código: reimportar una
+  /// cartola que se solapa con otra ya cargada no puede duplicar movimientos.
+  ///
+  /// Postgres considera distintos entre sí los `NULL` de un índice único, y de eso depende que las
+  /// transacciones cargadas a mano —todas con huella `null`— no choquen entre ellas.
+  @@unique([user_account_id, import_fingerprint], map: "transactions_account_fingerprint_unique")
+  @@index([statement_import_id], map: "transactions_statement_import_id_index")
+}
+
+/// Un lote de importación de cartola.
+///
+/// Guarda de dónde salieron las transacciones para poder deshacer la importación completa: si el
+/// mapeo de columnas estuvo mal, revertir 128 movimientos a mano no es una opción realista.
+model statement_imports {
+  id              String         @id @default(uuid()) @db.Uuid
+  user_id         String         @db.Uuid
+  user_account_id String         @db.Uuid
+  /// Nombre del archivo subido, para reconocer el lote en la lista.
+  filename        String         @db.VarChar(255)
+  /// Cuántas transacciones se crearon.
+  imported_count  Int
+  /// Cuántas filas se saltaron por estar ya importadas.
+  duplicate_count Int
+  /// Cuántas filas se saltaron por no poder interpretarse.
+  skipped_count   Int
+  /// Saldo de la cuenta antes de importar, para poder restaurarlo al deshacer.
+  balance_before  Decimal        @db.Decimal(15, 2)
+  /// Mapeo de columnas usado, guardado tal cual para poder auditar una importación dudosa.
+  mapping         Json
+  created_at      DateTime       @default(now()) @db.Timestamp(0)
+  users           users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_accounts   user_accounts  @relation(fields: [user_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions    transactions[]
+
+  @@index([user_id, created_at], map: "statement_imports_user_created_idx")
+}
+
+/// Mapeo de columnas que un usuario confirmó para las cartolas de un banco.
+///
+/// Los papeles se guardan por el TEXTO del encabezado, no por el número de columna: la cantidad de
+/// filas decorativas y el orden de las columnas cambian entre una cartola y otra del mismo banco,
+/// y un índice guardado quedaría apuntando a cualquier cosa.
+model bank_statement_mappings {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  bank_id    String   @db.Uuid
+  /// `{ shape, positiveMeans, roles: { date: "fecha", debit: "cheques y otros cargos", ... } }`
+  config     Json
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  banks      banks    @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, bank_id], map: "bank_statement_mappings_user_bank_unique")
 }
 
 model user_accounts {
-  id                     String         @id @db.Uuid
-  user_id                String         @db.Uuid
-  bank_id                String         @db.Uuid
-  account_type_id        String         @db.Uuid
-  identifier             String?        @db.VarChar(255)
-  balance                Decimal        @default(0) @db.Decimal(15, 2)
-  created_at             DateTime?      @db.Timestamp(0)
-  updated_at             DateTime?      @db.Timestamp(0)
-  transactions           transactions[] @relation("transactions_user_account")
-  transactions_as_target transactions[] @relation("transactions_target_account")
-  account_types          account_types  @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_account_type_id_foreign")
-  banks                  banks          @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_bank_id_foreign")
-  users                  users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_accounts_user_id_foreign")
+  id                     String                   @id @db.Uuid
+  user_id                String                   @db.Uuid
+  bank_id                String                   @db.Uuid
+  account_type_id        String                   @db.Uuid
+  identifier             String?                  @db.VarChar(255)
+  balance                Decimal                  @default(0) @db.Decimal(15, 2)
+  /// Moneda de la cuenta (`CLP` o `USD`). `balance` y los montos de sus transacciones están
+  /// SIEMPRE expresados en esta moneda; la conversión ocurre solo al agregar totales.
+  currency               String                   @default("CLP") @db.VarChar(3)
+  created_at             DateTime?                @db.Timestamp(0)
+  updated_at             DateTime?                @db.Timestamp(0)
+  transactions           transactions[]           @relation("transactions_user_account")
+  transactions_as_target transactions[]           @relation("transactions_target_account")
+  account_types          account_types            @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_account_type_id_foreign")
+  banks                  banks                    @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_accounts_bank_id_foreign")
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_accounts_user_id_foreign")
   cards                  cards[]
+  recurring_transactions recurring_transactions[]
+  statement_imports      statement_imports[]
 }
 
 model bank_account_types {
@@ -304,22 +478,33 @@ model cards {
 }
 
 model users {
-  id                 String               @id @default(uuid()) @db.Uuid
-  name               String               @db.VarChar(255)
-  rut                String?              @unique(map: "users_rut_unique") @db.VarChar(255)
-  email              String               @unique(map: "users_email_unique") @db.VarChar(255)
-  email_verified_at  DateTime?            @db.Timestamp(0)
-  password           String               @db.VarChar(255)
-  remember_token     String?              @db.VarChar(100)
-  created_at         DateTime?            @db.Timestamp(0)
-  updated_at         DateTime?            @db.Timestamp(0)
-  budgets            budgets[]
-  group_user         group_user[]
-  groups             groups[]
-  savings_goals      savings_goals[]
-  shared_debt_splits shared_debt_splits[]
-  shared_debts       shared_debts[]
-  transaction_logs   transaction_logs[]
-  transactions       transactions[]
-  user_accounts      user_accounts[]
+  id                        String                     @id @default(uuid()) @db.Uuid
+  name                      String                     @db.VarChar(255)
+  rut                       String?                    @unique(map: "users_rut_unique") @db.VarChar(255)
+  email                     String                     @unique(map: "users_email_unique") @db.VarChar(255)
+  email_verified_at         DateTime?                  @db.Timestamp(0)
+  password                  String                     @db.VarChar(255)
+  remember_token            String?                    @db.VarChar(100)
+  totp_secret               String?                    @db.VarChar(255)
+  totp_enabled              Boolean                    @default(false)
+  /// Moneda en la que se muestran los totales agregados (dashboard, resumen mensual). Las
+  /// cuentas conservan su propia moneda; esto solo define a qué se convierte al sumarlas.
+  base_currency             String                     @default("CLP") @db.VarChar(3)
+  created_at                DateTime?                  @db.Timestamp(0)
+  updated_at                DateTime?                  @db.Timestamp(0)
+  budgets                   budgets[]
+  group_user                group_user[]
+  groups                    groups[]
+  savings_goals             savings_goals[]
+  security_logs             security_logs[]
+  shared_debt_splits        shared_debt_splits[]
+  shared_debts              shared_debts[]
+  transaction_logs          transaction_logs[]
+  transactions              transactions[]
+  user_accounts             user_accounts[]
+  email_verification_tokens email_verification_tokens?
+  push_subscriptions        push_subscriptions[]
+  recurring_transactions    recurring_transactions[]
+  statement_imports         statement_imports[]
+  bank_statement_mappings   bank_statement_mappings[]
 }

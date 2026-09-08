@@ -13,9 +13,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  scroll-behavior: smooth;
+/* ─── Variables semánticas de Pfinance ────────────────────────────────────── */
+/* Usarlas desde Recharts (que no entiende tokens de Mantine) y style inlines  */
+:root {
+  /* Colores semánticos */
+  --pf-income:   hsl(158, 64%, 38%);   /* teal oscuro — ingresos */
+  --pf-expense:  hsl(0, 70%, 56%);     /* rojo coral — gastos    */
+  --pf-warning:  hsl(38, 90%, 50%);    /* ámbar      — alertas   */
+  --pf-savings:  hsl(260, 62%, 58%);   /* violeta    — metas     */
+  --pf-neutral:  hsl(220, 14%, 52%);   /* gris azulado           */
+
+  /* Superficies */
+  --pf-card-bg-light: #ffffff;
+  --pf-card-bg-dark:  #1e2433;
+  --pf-border-light:  rgba(0, 0, 0, 0.08);
+  --pf-border-dark:   rgba(255, 255, 255, 0.08);
+
+  /* Gráficos */
+  --pf-chart-income:  hsl(158, 64%, 45%);
+  --pf-chart-expense: hsl(0, 70%, 60%);
+  --pf-chart-balance: hsl(210, 90%, 65%);
+  --pf-chart-grid:    rgba(100, 116, 139, 0.2);
 }
+
+/* Ajuste en modo oscuro */
+[data-mantine-color-scheme="dark"] {
+  --pf-income:  hsl(158, 60%, 52%);
+  --pf-expense: hsl(0, 78%, 65%);
+  --pf-savings: hsl(260, 70%, 72%);
+}
+
+
 
 /* ─── Landing Page Animations ─────────────────────── */
 

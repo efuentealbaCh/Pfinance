@@ -4,6 +4,7 @@ import { useForm } from '@mantine/form';
 import { DatePickerInput } from '@mantine/dates';
 import { useCreateSharedDebt } from '../api/queries';
 import { notifications } from '@mantine/notifications';
+import Money from './Money';
 
 interface Props {
   opened: boolean;
@@ -103,7 +104,7 @@ export default function AddSharedDebtModal({ opened, close, groupId, members }: 
                         {...form.getInputProps(`splits.${index}.percentage`)} 
                       />
                     </Table.Td>
-                    <Table.Td>${owe.toFixed(2)}</Table.Td>
+                    <Table.Td><Money amount={owe} currency="CLP" fw={500} size="sm" /></Table.Td>
                   </Table.Tr>
                 );
               })}

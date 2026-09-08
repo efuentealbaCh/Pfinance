@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomUUID } from 'crypto';
+import { calculateBudgetPercentage, resolveBudgetPeriod } from '../common/budget-period.util';
 
 @Injectable()
 export class BudgetsService {
@@ -68,7 +69,7 @@ export class BudgetsService {
   }
 
   private async enrichBudgetWithSpent(budget: any, userId: string) {
-    const [dateFrom, dateTo] = this.getPeriodRange(budget.period);
+    const { from: dateFrom, to: dateTo } = resolveBudgetPeriod(budget.period);
 
     const spentAgg = await this.prisma.transactions.aggregate({
       _sum: { amount: true },
@@ -82,7 +83,7 @@ export class BudgetsService {
 
     const spent = Number(spentAgg._sum.amount || 0);
     const amount = Number(budget.amount);
-    const percentage = amount > 0 ? Number(((spent / amount) * 100).toFixed(1)) : 0;
+    const percentage = calculateBudgetPercentage(spent, amount);
 
     const { categories, ...rest } = budget;
 
@@ -95,32 +96,5 @@ export class BudgetsService {
       period_from: dateFrom.toISOString().split('T')[0],
       period_to: dateTo.toISOString().split('T')[0],
     };
-  }
-
-  private getPeriodRange(period: string): [Date, Date] {
-    const now = new Date();
-    
-    if (period.match(/^\d{4}-\d{2}$/)) {
-       const [year, month] = period.split('-');
-       const start = new Date(Number(year), Number(month) - 1, 1);
-       const end = new Date(Number(year), Number(month), 0, 23, 59, 59, 999);
-       return [start, end];
-    }
-
-    switch (period) {
-      case 'weekly':
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        const startOfWeek = new Date(now.setDate(diff));
-        startOfWeek.setHours(0,0,0,0);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23,59,59,999);
-        return [startOfWeek, endOfWeek];
-      case 'yearly':
-        return [new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999)];
-      default:
-        return [new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)];
-    }
   }
 }

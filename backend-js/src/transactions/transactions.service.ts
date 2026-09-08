@@ -1,10 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
+import { CurrencyService } from '../currency/currency.service';
+import { PushService } from '../push/push.service';
+import { baseEmailTemplate } from '../mail/templates/base.template';
+import { budgetAlertContent } from '../mail/templates/budget-alert.template';
+import { calculateBudgetPercentage, resolveBudgetPeriod } from '../common/budget-period.util';
+import { normalizeCurrency } from '../common/currency.util';
 import { randomUUID } from 'crypto';
+
+/**
+ * Umbrales de consumo (en %) que disparan una alerta de presupuesto, de mayor a menor.
+ * El orden importa: solo se avisa del umbral más alto que se haya cruzado, para que una
+ * transacción que salta de 0% a 120% no mande dos avisos seguidos.
+ */
+const BUDGET_ALERT_THRESHOLDS = [100, 80];
+
+/** Ruta del frontend que abre el service worker al hacer click en la notificación push. */
+const BUDGETS_FRONTEND_PATH = '/budgets';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(TransactionsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private pushService: PushService,
+    private mailService: MailService,
+    private currencyService: CurrencyService,
+  ) {}
 
   private mapTransaction(t: any) {
     if (!t) return t;
@@ -147,7 +172,7 @@ export class TransactionsService {
       }
     }
 
-    await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), false, transaction.target_account_id, transaction.card_id);
+    await this.adjustAccountBalance(userId, transaction, false);
     await this.logAction(transaction.id, userId, 'CREATE', null, transaction, reqMetadata);
 
     const warnings = await this.checkBudgetWarning(userId, transaction);
@@ -177,7 +202,7 @@ export class TransactionsService {
     }
 
     const before = transaction;
-    await this.adjustAccountBalance(userId, before.user_account_id, before.type, Number(before.amount), true, before.target_account_id, before.card_id);
+    await this.adjustAccountBalance(userId, before, true);
 
     const updatedTransaction = await this.prisma.transactions.update({
       where: { id },
@@ -227,7 +252,7 @@ export class TransactionsService {
       }
     }
 
-    await this.adjustAccountBalance(userId, updatedTransaction.user_account_id, updatedTransaction.type, Number(updatedTransaction.amount), false, updatedTransaction.target_account_id, updatedTransaction.card_id);
+    await this.adjustAccountBalance(userId, updatedTransaction, false);
     await this.logAction(transaction.id, userId, 'UPDATE', before, updatedTransaction, reqMetadata);
 
     const warnings = await this.checkBudgetWarning(userId, updatedTransaction);
@@ -246,7 +271,7 @@ export class TransactionsService {
     if (!transaction) throw new NotFoundException('Transaction not found');
 
     await this.logAction(transaction.id, userId, 'DELETE', transaction, null, reqMetadata);
-    await this.adjustAccountBalance(userId, transaction.user_account_id, transaction.type, Number(transaction.amount), true, transaction.target_account_id, transaction.card_id);
+    await this.adjustAccountBalance(userId, transaction, true);
 
     await this.prisma.transactions.delete({ where: { id } });
 
@@ -269,7 +294,38 @@ export class TransactionsService {
     });
   }
 
-  private async adjustAccountBalance(userId: string, accountId: string, type: string, amount: number, revert = false, targetAccountId: string | null = null, cardId: string | null = null) {
+  /**
+   * Aplica (o revierte) el efecto de una transacción sobre el saldo de la cuenta, la cuenta
+   * destino si es transferencia, y la tarjeta asociada.
+   *
+   * Recibe la transacción entera en vez de sus campos sueltos porque los cuatro puntos que la
+   * llaman le pasan siempre el mismo objeto, y con siete parámetros posicionales era fácil
+   * cruzar dos por error.
+   *
+   * En una transferencia entre cuentas de distinta moneda, el monto sale de la cuenta origen en
+   * SU moneda y se acredita en la destino convertido con la cotización de la fecha de la
+   * transacción. Como las cotizaciones ya cargadas son inmutables, revertir la misma transacción
+   * más tarde recalcula exactamente el mismo monto convertido y el saldo vuelve a cuadrar.
+   *
+   * @param userId dueño de las cuentas involucradas
+   * @param transaction transacción a aplicar o revertir
+   * @param revert `true` para deshacer el efecto (edición o borrado)
+   */
+  private async adjustAccountBalance(
+    userId: string,
+    transaction: {
+      user_account_id: string;
+      target_account_id: string | null;
+      type: string;
+      amount: Prisma.Decimal | number;
+      card_id: string | null;
+      date: Date;
+    },
+    revert = false,
+  ) {
+    const { user_account_id: accountId, target_account_id: targetAccountId, type, card_id: cardId, date } = transaction;
+    const amount = Number(transaction.amount);
+
     const account = await this.prisma.user_accounts.findFirst({ where: { id: accountId, user_id: userId } });
     if (!account) return;
 
@@ -288,8 +344,14 @@ export class TransactionsService {
       if (targetAccountId) {
         const targetAccount = await this.prisma.user_accounts.findFirst({ where: { id: targetAccountId, user_id: userId } });
         if (targetAccount) {
+          const credited = await this.currencyService.convert(
+            amount,
+            normalizeCurrency(account.currency),
+            normalizeCurrency(targetAccount.currency),
+            date,
+          );
           let targetBalance = Number(targetAccount.balance);
-          targetBalance += (amount * factor);
+          targetBalance += (credited * factor);
           await this.prisma.user_accounts.update({
             where: { id: targetAccountId },
             data: { balance: targetBalance },
@@ -304,12 +366,14 @@ export class TransactionsService {
     });
 
     if (cardId) {
+      // La tarjeta pertenece a la cuenta origen, así que comparte su moneda: acá nunca hay
+      // conversión, ni siquiera en una transferencia a una cuenta en otra moneda.
       const card = await this.prisma.cards.findFirst({ where: { id: cardId, user_account_id: accountId } });
       if (card) {
         let cardBalance = Number(card.balance);
         if (type === 'income') cardBalance += (amount * factor);
         else if (type === 'expense' || type === 'transfer') cardBalance -= (amount * factor);
-        
+
         await this.prisma.cards.update({
           where: { id: cardId },
           data: { balance: cardBalance },
@@ -318,37 +382,137 @@ export class TransactionsService {
     }
   }
 
-  private async checkBudgetWarning(userId: string, transaction: any) {
-    if (transaction.type !== 'expense') return [];
+  /**
+   * Evalúa los presupuestos de la categoría de la transacción y devuelve los avisos de texto
+   * que la API ya venía exponiendo en `warnings`, además de disparar la notificación (push o
+   * correo) la primera vez que se cruza cada umbral en cada período.
+   *
+   * Se consultan TODOS los presupuestos de la categoría en vez de filtrar por período, porque
+   * `budgets.period` convive en dos formatos: los literales `monthly`/`weekly`/`yearly` (el
+   * default del schema) y un mes explícito `YYYY-MM`. El rango efectivo lo resuelve
+   * `resolveBudgetPeriod`, el mismo helper que usa `BudgetsService` para mostrar el consumo.
+   *
+   * @param userId id del usuario dueño de la transacción
+   * @param transaction transacción recién creada o actualizada
+   * @returns lista de mensajes para el frontend (vacía si no se cruzó ningún umbral)
+   */
+  private async checkBudgetWarning(userId: string, transaction: any): Promise<string[]> {
+    if (transaction.type !== 'expense' || !transaction.category_id) return [];
 
-    const date = new Date();
-    const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-    const budget = await this.prisma.budgets.findFirst({
-      where: { user_id: userId, category_id: transaction.category_id, period: currentMonth },
+    const budgets = await this.prisma.budgets.findMany({
+      where: { user_id: userId, category_id: transaction.category_id },
+      include: { categories: true },
     });
 
-    if (budget) {
-      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const warnings: string[] = [];
+
+    for (const budget of budgets) {
+      const period = resolveBudgetPeriod(budget.period);
 
       const spentAgg = await this.prisma.transactions.aggregate({
         _sum: { amount: true },
         where: {
           user_id: userId,
-          category_id: transaction.category_id,
+          category_id: budget.category_id,
           type: 'expense',
-          date: { gte: startOfMonth, lte: endOfMonth },
-        }
+          date: { gte: period.from, lte: period.to },
+        },
       });
-      const spent = Number(spentAgg._sum.amount || 0);
-      const budgetAmount = Number(budget.amount);
 
-      if (spent >= (budgetAmount * 0.8)) {
-        const category = transaction.categories ? transaction.categories.name : 'la categoría';
-        return [`¡Atención! Has alcanzado o superado el 80% de tu presupuesto de $${budgetAmount} para ${category} en este mes.`];
-      }
+      const spent = Number(spentAgg._sum.amount || 0);
+      const amount = Number(budget.amount);
+      const percentage = calculateBudgetPercentage(spent, amount);
+
+      const threshold = BUDGET_ALERT_THRESHOLDS.find(t => percentage >= t);
+      if (!threshold) continue;
+
+      const category = budget.categories ? budget.categories.name : 'la categoría';
+      const alert = { category, amount, spent: Number(spent.toFixed(2)), percentage, threshold };
+
+      warnings.push(
+        threshold >= 100
+          ? `¡Atención! Alcanzaste o superaste el 100% de tu presupuesto de $${amount} para ${category}. Llevás gastados $${alert.spent} (${percentage}%).`
+          : `¡Atención! Alcanzaste el 80% de tu presupuesto de $${amount} para ${category}. Llevás gastados $${alert.spent} (${percentage}%).`,
+      );
+
+      await this.notifyBudgetThreshold(userId, budget.id, period.key, alert);
     }
-    return [];
+
+    return warnings;
+  }
+
+  /**
+   * Notifica al usuario que cruzó un umbral de su presupuesto, una sola vez por período.
+   *
+   * El registro en `budget_alerts` se hace ANTES de enviar y se apoya en el índice único
+   * `(budget_id, period_key, threshold)`: si dos transacciones cruzan el umbral al mismo
+   * tiempo, el segundo insert falla con P2002 y ese camino no manda nada. Un `findFirst`
+   * previo no daría esa garantía (dos requests podrían leer "no existe" a la vez).
+   *
+   * Nada de esto puede tumbar la creación/actualización de la transacción: todo error se
+   * loguea y se sigue.
+   *
+   * @param userId id del usuario destinatario
+   * @param budgetId presupuesto que cruzó el umbral
+   * @param periodKey instancia del período (`2026-09`, `2026-W37`, `2026`)
+   * @param alert datos del presupuesto para armar el mensaje
+   */
+  private async notifyBudgetThreshold(
+    userId: string,
+    budgetId: string,
+    periodKey: string,
+    alert: { category: string; amount: number; spent: number; percentage: number; threshold: number },
+  ) {
+    try {
+      await this.prisma.budget_alerts.create({
+        data: { budget_id: budgetId, period_key: periodKey, threshold: alert.threshold },
+      });
+    } catch (error) {
+      // P2002 = violación de unique: este umbral ya se avisó en este período, no es un error.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return;
+
+      this.logger.error(
+        `No se pudo registrar la alerta del ${alert.threshold}% del presupuesto ${budgetId} (período ${periodKey}): ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      return;
+    }
+
+    try {
+      const body =
+        alert.threshold >= 100
+          ? `Agotaste tu presupuesto de ${alert.category}: llevás gastados $${alert.spent} de $${alert.amount} (${alert.percentage}%).`
+          : `Vas por el ${alert.percentage}% de tu presupuesto de ${alert.category}: $${alert.spent} de $${alert.amount}.`;
+
+      // Un solo canal por aviso: push si el usuario tiene algún dispositivo suscripto, y
+      // correo únicamente como respaldo cuando no tiene ninguno.
+      const subscriptions = await this.prisma.push_subscriptions.count({ where: { user_id: userId } });
+
+      if (subscriptions > 0) {
+        await this.pushService.sendToUser(userId, {
+          title: 'Pfinance — Alerta de presupuesto',
+          body,
+          url: BUDGETS_FRONTEND_PATH,
+        });
+        return;
+      }
+
+      const user = await this.prisma.users.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true },
+      });
+      if (!user) return;
+
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: `Pfinance — Alerta de presupuesto: ${alert.category}`,
+        html: baseEmailTemplate(budgetAlertContent(user.name, alert), body),
+      });
+    } catch (error) {
+      this.logger.error(
+        `No se pudo notificar la alerta del ${alert.threshold}% del presupuesto ${budgetId} al usuario ${userId}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+    }
   }
 }

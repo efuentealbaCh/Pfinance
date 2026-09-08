@@ -1,0 +1,518 @@
+{
+  "info": {
+    "name": "Pfinance API — Auth (Fase 0-2)",
+    "description": "Colección de pruebas manuales para verificación de email, recuperación de contraseña, rate limiting y 2FA. Requiere el stack local corriendo (docker compose up -d).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "totpSecret",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Registro",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Mi Usuario de Prueba\",\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ver mi perfil (GET /auth/me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/me"
+      }
+    },
+    {
+      "name": "4a. Verificación de email — reenviar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/resend-verification"
+      }
+    },
+    {
+      "name": "4b. Verificación de email — confirmar (pegar el token del link del correo)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/verify-email?token=PEGAR_TOKEN_DEL_LINK_DEL_CORREO_ACA"
+      }
+    },
+    {
+      "name": "5a. Olvidé mi contraseña",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/forgot-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5b. Restablecer contraseña (pegar el token del link del correo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/reset-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"PEGAR_TOKEN_DEL_LINK_DEL_CORREO_ACA\",\n  \"password\": \"miPasswordNuevaSegura456\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6a. 2FA — Activar (setup, devuelve QR)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/2fa/setup"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.secret) pm.collectionVariables.set('totpSecret', body.secret);",
+              "console.log('Secret (por si no podés escanear el QR):', body.secret);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6b. 2FA — Confirmar (código de tu app autenticadora)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/2fa/confirm",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"PEGAR_CODIGO_DE_6_DIGITOS_DE_TU_APP\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6c. Login con 2FA activo (sin código, debe pedirlo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6d. Login con 2FA activo (con código)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tu-correo-real@gmail.com\",\n  \"password\": \"unaPasswordSegura123\",\n  \"code\": \"PEGAR_CODIGO_ACTUAL_DE_TU_APP\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  if (body.token) pm.collectionVariables.set('token', body.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6e. 2FA — Desactivar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/2fa/disable",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"password\": \"unaPasswordSegura123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Rate limiting — probar límite de login (correr 6+ veces seguidas)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"noexiste@test.com\",\n  \"password\": \"cualquiera\"\n}"
+        }
+      }
+    },
+    {
+      "name": "8a. Monedas soportadas (GET /currencies)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/currencies",
+        "description": "Devuelve las monedas que maneja la app y sus decimales (CLP sin decimales, USD con dos)."
+      }
+    },
+    {
+      "name": "8b. Cotizacion mas reciente del dolar (GET /exchange-rates/latest)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/exchange-rates/latest?from=USD&to=CLP",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "exchange-rates",
+            "latest"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "USD"
+            },
+            {
+              "key": "to",
+              "value": "CLP"
+            }
+          ]
+        },
+        "description": "Ultima cotizacion cargada desde mindicador.cl, con la fecha de la que salio. Los fines de semana y feriados no hay valor nuevo, asi que la fecha puede ser la del ultimo dia habil."
+      }
+    },
+    {
+      "name": "8c. Crear cuenta en dolares (POST /user-accounts)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/user-accounts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bank_id\": \"<id de GET /banks>\",\n  \"account_type_id\": \"<id de GET /account-types>\",\n  \"identifier\": \"Cuenta Dolar\",\n  \"balance\": 0,\n  \"currency\": \"USD\"\n}"
+        },
+        "description": "La moneda vive en la cuenta y sus transacciones la heredan. Si se omite 'currency' la cuenta queda en CLP. Una moneda no soportada devuelve 400, y cambiar la moneda de una cuenta que ya tiene movimientos devuelve 409."
+      }
+    },
+    {
+      "name": "8d. Totales del dashboard convertidos a la moneda base (GET /dashboard/summary)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/summary?date_from=2026-09-01&date_to=2026-09-30",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "dashboard",
+            "summary"
+          ],
+          "query": [
+            {
+              "key": "date_from",
+              "value": "2026-09-01"
+            },
+            {
+              "key": "date_to",
+              "value": "2026-09-30"
+            }
+          ]
+        },
+        "description": "Los totales suman cuentas en distinta moneda convirtiendo cada movimiento con la cotizacion de SU fecha, y el campo 'summary.currency' dice en que moneda quedaron expresados."
+      }
+    },
+    {
+      "name": "9a. Cartola - previsualizar (POST /statement-imports/preview)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/statement-imports/preview",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "La cartola: .xlsx, .xls o .csv (max 5 MB)."
+            },
+            {
+              "key": "user_account_id",
+              "value": "<id de GET /user-accounts>",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "NO escribe nada. Devuelve la estructura detectada (fila de encabezado, columnas con su titulo real, periodo, forma cargo/abono), las primeras filas ya interpretadas, el saldo de cierre y las advertencias. Es el paso obligatorio antes de importar."
+      }
+    },
+    {
+      "name": "9b. Cartola - importar (POST /statement-imports/confirm)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/statement-imports/confirm",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "El MISMO archivo que se previsualizo."
+            },
+            {
+              "key": "user_account_id",
+              "value": "<id de GET /user-accounts>",
+              "type": "text"
+            },
+            {
+              "key": "set_balance_to_closing",
+              "value": "false",
+              "type": "text",
+              "description": "true deja el saldo de la cuenta igual al de cierre de la cartola. Por defecto NO se toca el saldo: una cartola registra movimientos que el banco ya aplico, y sumarlos a un saldo que ya los refleja lo dejaria al doble."
+            },
+            {
+              "key": "save_mapping",
+              "value": "true",
+              "type": "text",
+              "description": "Guarda el mapeo de columnas para este banco, asi la proxima cartola no pide confirmarlo."
+            }
+          ]
+        },
+        "description": "Importa los movimientos. Reimportar una cartola que se solapa con otra ya cargada no duplica nada: la deduplicacion la hace un indice unico en la base."
+      }
+    },
+    {
+      "name": "9c. Cartola - corregir el mapeo a mano",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/statement-imports/preview",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "user_account_id",
+              "value": "<id de GET /user-accounts>",
+              "type": "text"
+            },
+            {
+              "key": "mapping",
+              "value": "{\"columns\": {\"date\": 0, \"description\": 2, \"debit\": 4, \"credit\": 5}, \"shape\": \"debit_credit\", \"firstDataRow\": 17, \"lastDataRow\": 144}",
+              "type": "text",
+              "description": "JSON con los indices de columna corregidos. Es la salida de escape si la deteccion automatica se equivoca con el formato de un banco: los indices salen de 'available_columns' que devuelve la previsualizacion."
+            }
+          ]
+        },
+        "description": "Misma previsualizacion, pero forzando el mapeo en vez de usar el detectado."
+      }
+    },
+    {
+      "name": "9d. Cartola - historial de importaciones (GET /statement-imports)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/statement-imports",
+        "description": "Lista los lotes importados, con cuantos movimientos trajo cada uno."
+      }
+    },
+    {
+      "name": "9e. Cartola - deshacer una importacion (DELETE /statement-imports/:id)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/statement-imports/<import_id>",
+        "description": "Borra todas las transacciones de ese lote. El saldo solo se restaura si esa importacion lo habia cambiado."
+      }
+    }
+  ]
+}
