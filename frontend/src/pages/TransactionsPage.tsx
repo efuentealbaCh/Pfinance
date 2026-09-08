@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Container,
     Title,
@@ -13,7 +14,7 @@ import {
     ThemeIcon,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconAlertCircle, IconAlertTriangle, IconBuildingBank, IconCoin, IconDownload, IconPlus } from '@tabler/icons-react';
+import { IconAlertCircle, IconAlertTriangle, IconBuildingBank, IconCoin, IconDownload, IconFileImport, IconPlus } from '@tabler/icons-react';
 import { useTransactions, useCatalogs, useDeleteTransaction } from '../api/queries';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
@@ -47,6 +48,7 @@ interface Transaction {
 
 
 export default function TransactionsPage() {
+    const navigate = useNavigate();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [page, setPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
@@ -196,6 +198,15 @@ export default function TransactionsPage() {
                             <IconCoin size={24} /> Transacciones
                         </Title>
                         <Group gap="sm">
+                            <Button
+                                variant="light"
+                                color="grape"
+                                radius="md"
+                                leftSection={<IconFileImport size={16} />}
+                                onClick={() => navigate('/import')}
+                            >
+                                Importar cartola
+                            </Button>
                             <Button
                                 variant="light"
                                 color="blue"

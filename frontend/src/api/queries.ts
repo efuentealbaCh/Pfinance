@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
 import { IconAlertTriangle, IconCoin, IconTrophy } from '@tabler/icons-react';
+import type { AxiosError } from 'axios';
 import api from './axios';
 
 // ─── TYPES ──────────────────────────────────────────────────
@@ -463,6 +464,166 @@ export const useTransactionSavingsGoal = () => {
           autoClose: 10000,
         });
       }
+    },
+  });
+};
+
+// ─── STATEMENT IMPORT ────────────────────────────────────────
+/** Papel que cumple una columna de la cartola. */
+export type ColumnRole = 'date' | 'description' | 'amount' | 'debit' | 'credit' | 'balance' | 'reference';
+
+/** Cómo expresa el archivo si un movimiento suma o resta. */
+export type StatementShape = 'signed' | 'debit_credit';
+
+/** Estructura que el backend detectó en el archivo. */
+export interface StatementStructure {
+  header_row: number | null;
+  first_data_row: number;
+  last_data_row: number;
+  /** Filas con forma de movimiento que quedaron fuera de la tabla y no se importarán. */
+  rows_after_table: number;
+  shape: StatementShape;
+  positive_means: 'income' | 'expense';
+  detected_by: 'headers' | 'content';
+  period: { from: string; to: string } | null;
+  /** Columna asignada a cada papel, con el título real que trae el archivo. */
+  columns: Partial<Record<ColumnRole, { index: number; label: string | null }>>;
+  /** Todas las columnas del encabezado, para poder corregir el mapeo a mano. */
+  available_columns: Array<{ index: number; label: string }>;
+}
+
+/** Una fila ya interpretada, tal como se importaría. */
+export interface StatementPreviewRow {
+  row_index: number;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  reference: string | null;
+  already_imported: boolean;
+}
+
+/** Respuesta de la previsualización. Nada de esto se escribió todavía. */
+export interface StatementPreview {
+  account: { id: string; identifier: string | null; bank: string | null; currency: string; balance: number };
+  structure: StatementStructure;
+  totals: { detected: number; to_import: number; already_imported: number; skipped: number };
+  closing_balance: number | null;
+  warnings: string[];
+  skipped: Array<{ rowIndex: number; reason: string; preview: string }>;
+  rows: StatementPreviewRow[];
+  rows_truncated: number;
+}
+
+/** Resultado de una importación confirmada. */
+export interface StatementImportResult {
+  import_id: string;
+  imported: number;
+  already_imported: number;
+  skipped: number;
+  balance: { before: number; after: number; changed: boolean };
+  mapping_saved: boolean;
+}
+
+/** Correcciones de mapeo que el usuario hace desde la previsualización. */
+export interface MappingOverride {
+  columns?: Partial<Record<ColumnRole, number>>;
+  shape?: StatementShape;
+  positiveMeans?: 'income' | 'expense';
+  firstDataRow?: number;
+  lastDataRow?: number;
+}
+
+/**
+ * Arma el cuerpo multipart. El mapeo viaja como JSON en un campo de texto porque el archivo
+ * obliga a usar `multipart/form-data`, donde no hay objetos anidados.
+ */
+const buildStatementForm = (file: File, accountId: string, mapping?: MappingOverride) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('user_account_id', accountId);
+  if (mapping && Object.keys(mapping).length > 0) form.append('mapping', JSON.stringify(mapping));
+  return form;
+};
+
+/**
+ * Interpreta la cartola sin escribir nada. Es el paso previo obligatorio: el usuario tiene que
+ * ver qué entendió el sistema antes de que se cree ninguna transacción.
+ */
+export const usePreviewStatement = () => {
+  return useMutation<StatementPreview, AxiosError<{ message?: string | string[] }>, { file: File; accountId: string; mapping?: MappingOverride }>({
+    mutationFn: async ({ file, accountId, mapping }) => {
+      const response = await api.post('/statement-imports/preview', buildStatementForm(file, accountId, mapping), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Importa los movimientos. Se reenvía el mismo archivo porque el backend no guarda la
+ * previsualización: la interpretación es determinista y la deduplicación por huella evita que
+ * una confirmación repetida duplique nada.
+ */
+export const useConfirmStatement = () => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    StatementImportResult,
+    AxiosError<{ message?: string | string[] }>,
+    { file: File; accountId: string; mapping?: MappingOverride; setBalanceToClosing: boolean; saveMapping: boolean }
+  >({
+    mutationFn: async ({ file, accountId, mapping, setBalanceToClosing, saveMapping }) => {
+      const form = buildStatementForm(file, accountId, mapping);
+      form.append('set_balance_to_closing', String(setBalanceToClosing));
+      form.append('save_mapping', String(saveMapping));
+
+      const response = await api.post('/statement-imports/confirm', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Una importación cambia transacciones, saldos y todo lo que se calcule sobre ellos.
+      // Las cuentas viven dentro de `catalogs`, que es de donde salen los saldos en pantalla.
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['catalogs'] });
+      queryClient.invalidateQueries({ queryKey: ['statement-imports'] });
+    },
+  });
+};
+
+/** Historial de importaciones, para poder revisar o deshacer una anterior. */
+export const useStatementImports = () => {
+  return useQuery({
+    queryKey: ['statement-imports'],
+    queryFn: async () => {
+      const response = await api.get('/statement-imports');
+      return response.data;
+    },
+  });
+};
+
+/** Deshace una importación completa con todas sus transacciones. */
+export const useUndoStatementImport = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (importId: string) => {
+      const response = await api.delete(`/statement-imports/${importId}`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['catalogs'] });
+      queryClient.invalidateQueries({ queryKey: ['statement-imports'] });
+
+      notifications.show({
+        title: 'Importación revertida',
+        message: data.message,
+        color: 'teal',
+      });
     },
   });
 };
