@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Service worker que vite-plugin-pwa genera en desarrollo (devOptions.enabled).
+# Se regenera en cada arranque de `npm run dev`; versionarlo solo produce ruido.
+dev-dist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

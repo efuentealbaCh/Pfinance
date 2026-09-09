@@ -82,13 +82,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register(
-        values.name,
-        values.email,
-        values.rut,
-        values.password,
-        values.passwordConfirmation
-      );
+      await register(values.name, values.email, values.rut, values.password);
       navigate('/dashboard');
     } catch (err: unknown) {
       const axiosError = err as {

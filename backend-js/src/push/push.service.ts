@@ -120,6 +120,36 @@ export class PushService implements OnModuleInit {
   }
 
   /**
+   * Da de baja la suscripción de un browser.
+   *
+   * El borrado se filtra por `user_id` además del endpoint: aunque el endpoint sea único y
+   * difícil de adivinar, sin ese filtro cualquier usuario autenticado podría desactivarle las
+   * notificaciones a otro con solo conocerlo.
+   *
+   * Es idempotente a propósito: si no había fila que borrar (el browser ya se había dado de
+   * baja, o la suscripción venció y se limpió sola en un envío anterior) responde igual, sin
+   * error. Para el usuario el resultado es el mismo — no le llegan notificaciones —, y un 404
+   * acá solo lograría mostrar un error por algo que ya está como se pidió.
+   *
+   * @param userId id del usuario autenticado
+   * @param endpoint endpoint del PushSubscription que se da de baja
+   * @returns mensaje de confirmación
+   */
+  async unsubscribe(userId: string, endpoint: string) {
+    const { count } = await this.prisma.push_subscriptions.deleteMany({
+      where: { endpoint, user_id: userId },
+    });
+
+    this.logger.log(
+      count > 0
+        ? `Suscripción push dada de baja por el usuario ${userId}: ${endpoint}`
+        : `El usuario ${userId} pidió dar de baja un endpoint que ya no estaba registrado: ${endpoint}`,
+    );
+
+    return { message: 'Suscripción push dada de baja.' };
+  }
+
+  /**
    * Envía una notificación a todas las suscripciones activas de un usuario.
    * Las suscripciones que el browser dio de baja (404/410) se borran de la BD en el
    * momento, para no acumular endpoints muertos ni reintentar contra ellos para siempre.

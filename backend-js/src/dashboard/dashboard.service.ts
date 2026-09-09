@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrencyService } from '../currency/currency.service';
+import { BudgetsService } from '../budgets/budgets.service';
+import { SavingsGoalsService } from '../savings-goals/savings-goals.service';
 import { Currency, normalizeCurrency, roundToCurrency } from '../common/currency.util';
+
+/**
+ * Porcentaje de consumo a partir del cual un presupuesto se marca como alerta en el panel.
+ * Coincide con el umbral más bajo de `BUDGET_ALERT_THRESHOLDS` en TransactionsService, para que
+ * el aviso al cargar el dashboard y el que salta al registrar un gasto digan lo mismo.
+ */
+const BUDGET_ALERT_PERCENTAGE = 80;
 
 /** Gasto acumulado de una categoría dentro de un período. */
 export interface PeriodCategoryExpense {
@@ -40,6 +49,8 @@ export class DashboardService {
   constructor(
     private prisma: PrismaService,
     private currencyService: CurrencyService,
+    private budgetsService: BudgetsService,
+    private savingsGoalsService: SavingsGoalsService,
   ) {}
 
   /**
@@ -219,6 +230,11 @@ export class DashboardService {
       expense: roundToCurrency(data.expense, currency),
     }));
 
+    const [budgets, goals] = await Promise.all([
+      this.budgetsService.findAll(userId),
+      this.savingsGoalsService.findAll(userId),
+    ]);
+
     return {
       // `currency` se expone para que el frontend sepa en qué moneda están estos totales, que no
       // es necesariamente la de las cuentas que los originaron.
@@ -231,6 +247,17 @@ export class DashboardService {
         color: c.color ?? '#cccccc',
       })),
       chartData,
+      budgetProgress: budgets.budgets.map((b: any) => ({
+        id: b.id,
+        category_name: b.category?.name ?? 'Sin categoría',
+        category_icon: b.category?.icon ?? null,
+        amount: b.amount,
+        spent: b.spent,
+        percentage: b.percentage,
+        period: b.period,
+        alert: b.percentage >= BUDGET_ALERT_PERCENTAGE,
+      })),
+      savingsGoals: goals.goals,
     };
   }
 }

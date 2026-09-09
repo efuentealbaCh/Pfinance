@@ -11,6 +11,11 @@ export default defineConfig({
       workbox: {
         importScripts: ['/push-sw.js']
       },
+      devOptions: {
+        enabled: true,
+        type: 'classic',
+        suppressWarnings: true,
+      },
       includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'push-sw.js'],
       manifest: {
         name: 'Pfinance',

@@ -6,6 +6,8 @@ import { Notifications } from '@mantine/notifications';
 import { AuthProvider } from './context/AuthContext';
 import App from './App';
 
+import './hooks/useInstallPrompt';
+
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';

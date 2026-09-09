@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import { calculateBudgetPercentage, resolveBudgetPeriod } from '../common/budget-period.util';
+import { CurrencyService } from '../currency/currency.service';
+import { Currency, normalizeCurrency, roundToCurrency } from '../common/currency.util';
 
 @Injectable()
 export class BudgetsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private currencyService: CurrencyService,
+  ) {}
 
   async findAll(userId: string) {
     const budgets = await this.prisma.budgets.findMany({
@@ -13,8 +18,10 @@ export class BudgetsService {
       include: { categories: true },
       orderBy: { created_at: 'desc' },
     });
-    
-    const enriched = await Promise.all(budgets.map(b => this.enrichBudgetWithSpent(b, userId)));
+
+    const baseCurrency = await this.currencyService.getUserBaseCurrency(userId);
+
+    const enriched = await Promise.all(budgets.map(b => this.enrichBudgetWithSpent(b, userId, baseCurrency)));
     return { budgets: enriched };
   }
 
@@ -24,7 +31,7 @@ export class BudgetsService {
       include: { categories: true },
     });
     if (!budget) throw new NotFoundException('Budget not found');
-    return { budget: await this.enrichBudgetWithSpent(budget, userId) };
+    return { budget: await this.enrichBudgetWithSpent(budget, userId, await this.currencyService.getUserBaseCurrency(userId)) };
   }
 
   async create(userId: string, data: any) {
@@ -40,7 +47,10 @@ export class BudgetsService {
       },
       include: { categories: true },
     });
-    return { message: 'Presupuesto creado exitosamente.', budget: await this.enrichBudgetWithSpent(budget, userId) };
+    return {
+      message: 'Presupuesto creado exitosamente.',
+      budget: await this.enrichBudgetWithSpent(budget, userId, await this.currencyService.getUserBaseCurrency(userId)),
+    };
   }
 
   async update(id: string, userId: string, data: any) {
@@ -57,7 +67,10 @@ export class BudgetsService {
       },
       include: { categories: true },
     });
-    return { message: 'Presupuesto actualizado exitosamente.', budget: await this.enrichBudgetWithSpent(budget, userId) };
+    return {
+      message: 'Presupuesto actualizado exitosamente.',
+      budget: await this.enrichBudgetWithSpent(budget, userId, await this.currencyService.getUserBaseCurrency(userId)),
+    };
   }
 
   async remove(id: string, userId: string) {
@@ -68,20 +81,43 @@ export class BudgetsService {
     return { message: 'Presupuesto eliminado exitosamente.' };
   }
 
-  private async enrichBudgetWithSpent(budget: any, userId: string) {
+  /**
+   * Agrega a un presupuesto cuánto se lleva gastado en su período.
+   *
+   * El gasto se acumula en memoria convirtiendo cada movimiento, y no con un `SUM` de SQL, por
+   * el mismo motivo que en el dashboard: una suma en la base mezcla montos de cuentas en
+   * distinta moneda como si fueran la misma unidad, y 85.000 pesos más 100 dólares darían
+   * 85.100 de nada. Cada movimiento se convierte con la cotización de SU fecha, para que
+   * recalcular un período viejo no cambie de resultado según la cotización de hoy.
+   *
+   * @param budget presupuesto con su categoría incluida
+   * @param userId dueño del presupuesto
+   * @param baseCurrency moneda en la que se expresan `amount` y `spent`
+   */
+  private async enrichBudgetWithSpent(budget: any, userId: string, baseCurrency: Currency) {
     const { from: dateFrom, to: dateTo } = resolveBudgetPeriod(budget.period);
 
-    const spentAgg = await this.prisma.transactions.aggregate({
-      _sum: { amount: true },
+    const rows = await this.prisma.transactions.findMany({
       where: {
         user_id: userId,
         category_id: budget.category_id,
         type: 'expense',
-        date: { gte: dateFrom, lte: dateTo }
-      }
+        date: { gte: dateFrom, lte: dateTo },
+      },
+      select: {
+        date: true,
+        amount: true,
+        user_accounts: { select: { currency: true } },
+      },
     });
 
-    const spent = Number(spentAgg._sum.amount || 0);
+    let spent = 0;
+    for (const row of rows) {
+      const from = normalizeCurrency(row.user_accounts?.currency);
+      spent += await this.currencyService.convert(Number(row.amount), from, baseCurrency, row.date);
+    }
+    spent = roundToCurrency(spent, baseCurrency);
+
     const amount = Number(budget.amount);
     const percentage = calculateBudgetPercentage(spent, amount);
 
@@ -91,8 +127,9 @@ export class BudgetsService {
       ...rest,
       category: categories,
       amount,
-      spent: Number(spent.toFixed(2)),
+      spent,
       percentage,
+      currency: baseCurrency,
       period_from: dateFrom.toISOString().split('T')[0],
       period_to: dateTo.toISOString().split('T')[0],
     };

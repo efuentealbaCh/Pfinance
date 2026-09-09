@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { withSplitStatus } from '../common/shared-debt-status.util';
 
 @Injectable()
 export class GroupsService {
@@ -24,7 +25,7 @@ export class GroupsService {
     if (group.shared_debts) {
       shared_debts = group.shared_debts.map((debt: any) => ({
         ...debt,
-        splits: debt.shared_debt_splits ? debt.shared_debt_splits.map((s: any) => ({
+        splits: debt.shared_debt_splits ? debt.shared_debt_splits.map((s: any) => withSplitStatus({
           ...s,
           user: s.users
         })) : [],

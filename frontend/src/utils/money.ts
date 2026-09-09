@@ -19,20 +19,35 @@ export interface FormatMoneyOptions {
 
 const LOCALE = 'es-CL';
 
+/** Monedas que este formateador sabe representar. */
+const SUPPORTED: SupportedCurrency[] = ['CLP', 'USD', 'EUR'];
+
+/**
+ * Normaliza el código de moneda que llega desde la API.
+ *
+ * El backend devuelve `currency` como texto libre, así que la validación tiene que vivir acá y
+ * no en cada componente: antes la hacía solo `<Money>`, y cualquier llamada directa a
+ * `formatMoney` quedaba obligada a castear o a asumir pesos.
+ */
+function safeCurrency(currency: SupportedCurrency | string): SupportedCurrency {
+  return SUPPORTED.includes(currency as SupportedCurrency) ? (currency as SupportedCurrency) : 'CLP';
+}
+
 /**
  * Formatea un número como moneda según las reglas de Pfinance.
  *
  * @param amount   - Monto numérico
- * @param currency - Código de moneda ISO 4217 ('CLP' | 'USD' | 'EUR')
+ * @param currency - Código ISO 4217. Si no está soportado se formatea como CLP.
  * @param opts     - Opciones adicionales (compact)
  */
 export function formatMoney(
   amount: number,
-  currency: SupportedCurrency = 'CLP',
+  currencyCode: SupportedCurrency | string = 'CLP',
   opts: FormatMoneyOptions = {}
 ): string {
   const { compact = false } = opts;
 
+  const currency = safeCurrency(currencyCode);
   const isCLP = currency === 'CLP';
 
   if (compact) {

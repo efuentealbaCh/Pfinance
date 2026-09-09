@@ -93,7 +93,8 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
     const { data, isLoading, isError } = useDashboardSummary(params);
 
-    const summary = data?.summary || { totalIncome: 0, totalExpense: 0, balance: 0 };
+    const summary = data?.summary || { totalIncome: 0, totalExpense: 0, balance: 0, currency: 'CLP' };
+    const currency = summary.currency ?? 'CLP';
     const expensesByCategory = data?.expensesByCategory || [];
     const chartData = data?.chartData || [];
     const budgetProgress = data?.budgetProgress || [];
@@ -118,7 +119,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                     title: b.percentage >= 100
                         ? `Presupuesto excedido: ${b.category_name}`
                         : `Presupuesto al límite: ${b.category_name}`,
-                    message: `Has gastado ${formatMoney(b.spent, 'CLP')} de ${formatMoney(b.amount, 'CLP')} (${b.percentage}%)`,
+                    message: `Has gastado ${formatMoney(b.spent, currency)} de ${formatMoney(b.amount, currency)} (${b.percentage}%)`,
                     color: b.percentage >= 100 ? 'red' : 'orange',
                     icon: b.percentage >= 100 ? <IconBan size={20} /> : <IconAlertTriangle size={20} />,
                     autoClose: 8000,
@@ -150,7 +151,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     {nameLabel}
                                 </Text>
                                 <Text size="xs" fw={700}>
-                                    {formatMoney(entry.value, 'CLP')}
+                                    {formatMoney(entry.value, currency)}
                                 </Text>
                             </Group>
                         );
@@ -253,7 +254,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         ingresos Totales
                     </Text>
                     <Text fw={700} size="xl" c="teal">
-                        {formatMoney(summary.totalIncome, 'CLP')}
+                        {formatMoney(summary.totalIncome, currency)}
                     </Text>
                 </Paper>
                 <Paper withBorder p="xl" radius="md">
@@ -261,7 +262,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         gastos Totales
                     </Text>
                     <Text fw={700} size="xl" c="red">
-                        {formatMoney(summary.totalExpense, 'CLP')}
+                        {formatMoney(summary.totalExpense, currency)}
                     </Text>
                 </Paper>
                 <Paper withBorder p="xl" radius="md">
@@ -269,7 +270,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                         Balance Neto
                     </Text>
                     <Text fw={700} size="xl" c={summary.balance >= 0 ? 'teal' : 'red'}>
-                        {formatMoney(summary.balance, 'CLP')}
+                        {formatMoney(summary.balance, currency)}
                     </Text>
                 </Paper>
             </SimpleGrid>
@@ -310,7 +311,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                         tickMargin={10}
                                     />
                                     <YAxis
-                                        tickFormatter={(val) => formatMoney(val, 'CLP', { compact: true })}
+                                        tickFormatter={(val) => formatMoney(val, currency, { compact: true })}
                                         stroke="#5C5F66"
                                         fontSize={12}
                                     />
@@ -352,7 +353,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                         tickMargin={10}
                                     />
                                     <YAxis
-                                        tickFormatter={(val) => formatMoney(val, 'CLP', { compact: true })}
+                                        tickFormatter={(val) => formatMoney(val, currency, { compact: true })}
                                         stroke="#5C5F66"
                                         fontSize={12}
                                     />
@@ -397,7 +398,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                     <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#1A1B1E', borderColor: '#2C2E33', borderRadius: 8 }}
                                         itemStyle={{ color: '#C1C2C5' }}
-                                        formatter={(value: any) => formatMoney(value, 'CLP')}
+                                        formatter={(value: any) => formatMoney(value, currency)}
                                     />
                                     <Legend
                                         layout="vertical"
@@ -457,7 +458,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                             </Group>
                                             <Group gap="xs">
                                                 <Text size="xs" c="dimmed">
-                                                    {formatMoney(b.spent, 'CLP')} / {formatMoney(b.amount, 'CLP')}
+                                                    {formatMoney(b.spent, currency)} / {formatMoney(b.amount, currency)}
                                                 </Text>
                                                 <Text size="sm" fw={700} c={color}>
                                                     {b.percentage}%
@@ -509,7 +510,7 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
                                             </Group>
                                             <Group gap="xs">
                                                 <Text size="xs" c="dimmed">
-                                                    {formatMoney(g.current_amount, 'CLP')} / {formatMoney(g.target_amount, 'CLP')}
+                                                    {formatMoney(g.current_amount, currency)} / {formatMoney(g.target_amount, currency)}
                                                 </Text>
                                                 <Text size="sm" fw={700} c={color}>
                                                     {g.percentage}%

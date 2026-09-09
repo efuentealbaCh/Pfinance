@@ -9,18 +9,45 @@ import {
     Stack,
     Alert,
     Divider,
+    Group,
     Text,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconUser, IconLock } from '@tabler/icons-react';
+import { IconUser, IconLock, IconMailExclamation, IconHistory } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
-import { useUpdateProfile, useUpdatePassword } from '../api/queries';
+import {
+    apiErrorMessage,
+    useUpdateProfile,
+    useUpdatePassword,
+    useResendVerification,
+} from '../api/queries';
+import TwoFactorCard from '../components/TwoFactorCard';
+import SecurityLogTable from '../components/SecurityLogTable';
+import NotificationsCard from '../components/NotificationsCard';
 
 export default function ProfilePage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const updateProfileMutation = useUpdateProfile();
     const updatePasswordMutation = useUpdatePassword();
+    const resendMutation = useResendVerification();
+
+    const emailPendingVerification = user?.email_verified === false;
+
+    const handleResendVerification = () => {
+        resendMutation.mutate(undefined, {
+            onSuccess: (data) => {
+                notifications.show({ title: 'Correo reenviado', message: data.message, color: 'teal' });
+            },
+            onError: (error) => {
+                notifications.show({
+                    title: 'No se pudo reenviar',
+                    message: apiErrorMessage(error, 'Intentá de nuevo en un minuto.'),
+                    color: 'red',
+                });
+            },
+        });
+    };
 
     // ─── Formulario de perfil ──────────────────────────────
     const [profileError, setProfileError] = useState('');
@@ -39,12 +66,13 @@ export default function ProfilePage() {
     const handleProfileSubmit = (values: { name: string; email: string }) => {
         setProfileError('');
         updateProfileMutation.mutate(values, {
-            onSuccess: () => {
+            onSuccess: async () => {
                 notifications.show({
                     title: 'Perfil actualizado',
                     message: 'Tu información fue guardada correctamente.',
                     color: 'teal',
                 });
+                await refreshUser();
             },
             onError: (err: any) => {
                 const axiosError = err as {
@@ -84,7 +112,13 @@ export default function ProfilePage() {
         new_password_confirmation: string;
     }) => {
         setPasswordError('');
-        updatePasswordMutation.mutate(values, {
+
+        const payload = {
+            current_password: values.current_password,
+            password: values.new_password,
+        };
+
+        updatePasswordMutation.mutate(payload, {
             onSuccess: () => {
                 notifications.show({
                     title: 'Contraseña actualizada',
@@ -114,6 +148,38 @@ export default function ProfilePage() {
             <Title order={3} mb="xl" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <IconUser size={24} /> Mi Perfil
             </Title>
+
+            {/* ─── Aviso de correo sin verificar ─────────────────── */}
+            {emailPendingVerification && (
+                <Alert
+                    color="yellow"
+                    variant="light"
+                    radius="md"
+                    mb="xl"
+                    icon={<IconMailExclamation size={18} />}
+                    title="Tu correo todavía no está verificado"
+                >
+                    <Stack gap="xs">
+                        <Text size="sm">
+                            Te enviamos un enlace a {user?.email} cuando te registraste. Verificarlo nos
+                            deja avisarte por correo si alguien entra a tu cuenta desde un dispositivo
+                            nuevo.
+                        </Text>
+                        <Group>
+                            <Button
+                                size="xs"
+                                variant="light"
+                                color="yellow"
+                                radius="md"
+                                onClick={handleResendVerification}
+                                loading={resendMutation.isPending}
+                            >
+                                Reenviar correo de verificación
+                            </Button>
+                        </Group>
+                    </Stack>
+                </Alert>
+            )}
 
             {/* ─── Datos personales ──────────────────────────────── */}
             <Paper withBorder shadow="md" p="xl" radius="lg" mb="xl">
@@ -188,6 +254,30 @@ export default function ProfilePage() {
                         </Button>
                     </Stack>
                 </form>
+            </Paper>
+
+            <Divider my="lg" />
+
+            {/* ─── Verificación en dos pasos ─────────────────────── */}
+            <Paper withBorder shadow="md" p="xl" radius="lg" mb="xl">
+                <TwoFactorCard />
+            </Paper>
+
+            {/* ─── Notificaciones push ───────────────────────────── */}
+            <Paper withBorder shadow="md" p="xl" radius="lg" mb="xl">
+                <NotificationsCard />
+            </Paper>
+
+            {/* ─── Historial de seguridad ────────────────────────── */}
+            <Paper withBorder shadow="md" p="xl" radius="lg">
+                <Text fw={600} size="lg" mb="md" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <IconHistory size={18} /> Actividad de tu cuenta
+                </Text>
+                <Text size="sm" c="dimmed" mb="md">
+                    Últimos accesos y cambios sensibles. Si ves algo que no reconocés, cambiá tu
+                    contraseña y activá la verificación en dos pasos.
+                </Text>
+                <SecurityLogTable />
             </Paper>
         </Container>
     );

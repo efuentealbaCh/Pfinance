@@ -233,10 +233,10 @@ export default function BudgetsPage() {
                     {/* Amount info */}
                     <Group justify="space-between" mb={6}>
                       <Text size="xs" c="dimmed">
-                        {formatMoney(budget.spent, 'CLP')} gastado
+                        {formatMoney(budget.spent, budget.currency ?? 'CLP')} gastado
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {formatMoney(budget.amount, 'CLP')} límite
+                        {formatMoney(budget.amount, budget.currency ?? 'CLP')} límite
                       </Text>
                     </Group>
 

@@ -2,6 +2,15 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Cualquier otra variante con valores reales (.env.production, .env.local,
+# .env.render...). El patrón cubre las que todavía no existen: hasta ahora solo
+# se ignoraba `.env` exacto, así que un archivo con secretos y otro nombre
+# entraba a git sin que nada avisara.
+# Las plantillas *.example no llevan valores, por eso sí se versionan.
+.env.*
+!.env.example
+!.env.production.example
+
 /generated/prisma
 /dist
 *.tsbuildinfo
