@@ -180,6 +180,31 @@ export class AuthService {
   }
 
   /**
+   * Arma el perfil que se le devuelve al cliente a partir de la fila de `users`.
+   *
+   * El `rut` sale desencriptado, igual que en la respuesta del login: `JwtStrategy` devuelve la
+   * fila cruda de la base, así que sin este paso `GET /auth/me` entregaba el valor cifrado. Como
+   * el frontend recarga el usuario desde ese endpoint en cada arranque, el botón de copiar datos
+   * de transferencia terminaba pegando el blob hexadecimal en lugar del RUT.
+   *
+   * `totp_secret` no se expone nunca, aunque esté encriptado: es el secreto que permite generar
+   * códigos TOTP válidos, y no hay motivo para que salga del servidor.
+   *
+   * @param user fila de `users` sin la contraseña, tal como la deja `JwtStrategy.validate`
+   * @returns el usuario listo para serializar, con los indicadores de estado que espera el PWA
+   */
+  buildProfile(user: any) {
+    const { totp_secret, password, ...rest } = user;
+
+    return {
+      ...rest,
+      rut: this.encryptionService.decrypt(user.rut),
+      email_verified: !!user.email_verified_at,
+      totp_enabled: !!user.totp_enabled,
+    };
+  }
+
+  /**
    * Valida un token de verificación de email (recibido en texto plano desde el link del
    * frontend), y si es válido y no expiró, marca `users.email_verified_at` y consume el token.
    * @throws BadRequestException si el token no existe o ya expiró

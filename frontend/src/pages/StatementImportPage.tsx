@@ -51,6 +51,7 @@ import {
 } from '../api/queries';
 import StatementPreviewTable from '../components/StatementPreviewTable';
 import StatementMappingEditor from '../components/StatementMappingEditor';
+import StatementImportHistory from '../components/StatementImportHistory';
 
 /** Extensiones que acepta el backend. */
 const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
@@ -536,6 +537,8 @@ export default function StatementImportPage() {
                     </Stack>
                 </Card>
             )}
+
+            {step === 0 && <StatementImportHistory />}
         </Stack>
     );
 }

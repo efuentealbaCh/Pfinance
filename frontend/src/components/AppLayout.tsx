@@ -18,7 +18,9 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconChartBar,
   IconCoin,
+  IconCalendarRepeat,
   IconFileImport,
+  IconReportMoney,
   IconTag,
   IconClipboardList,
   IconTarget,
@@ -31,34 +33,23 @@ import {
 } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { usePushSubscribe, getVapidPublicKey } from "../api/queries";
+import { supportsWebPush } from "../utils/platform";
+import { createSubscription, getExistingSubscription, notificationPermission } from "../utils/push";
 
 type TablerIconComponent = ComponentType<{ size?: number | string; color?: string; stroke?: number | string }>;
 
 const NAV_ITEMS: { label: string; icon: TablerIconComponent; path: string }[] = [
   { label: "Dashboard", icon: IconChartBar, path: "/dashboard" },
   { label: "Transacciones", icon: IconCoin, path: "/transactions" },
+  { label: "Recurrentes", icon: IconCalendarRepeat, path: "/recurring" },
   { label: "Importar cartola", icon: IconFileImport, path: "/import" },
   { label: "Categorías", icon: IconTag, path: "/categories" },
   { label: "Presupuestos", icon: IconClipboardList, path: "/budgets" },
   { label: "Metas", icon: IconTarget, path: "/savings" },
+  { label: "Resumen mensual", icon: IconReportMoney, path: "/reports" },
   { label: "Grupos", icon: IconUsers, path: "/groups" },
   { label: "Mi Perfil", icon: IconUser, path: "/profile" },
 ];
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, "+")
-    .replace(/_/g, "/");
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -68,29 +59,32 @@ export default function AppLayout() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const pushSubscribeMutation = usePushSubscribe();
 
+  /**
+   * Re-sincroniza la suscripción push del navegador con el servidor al iniciar sesión.
+   *
+   * Solo corre si el usuario YA concedió el permiso: antes esto se suscribía al montar el
+   * layout, lo que disparaba el cartel del navegador apenas alguien entraba, sin contexto ni
+   * forma de deshacerlo. Pedir el permiso es ahora tarea del botón en el perfil.
+   *
+   * Sigue haciendo falta porque la suscripción es de la cuenta, no del navegador: si el mismo
+   * equipo lo usan dos personas, al iniciar sesión la segunda hay que reasignarle el endpoint
+   * (el backend lo resuelve con un upsert por endpoint).
+   */
   useEffect(() => {
-    if ("serviceWorker" in navigator && "PushManager" in window && user) {
-      navigator.serviceWorker.ready.then(async (registration) => {
-        try {
-          const subscription = await registration.pushManager.getSubscription();
-          if (!subscription) {
-            const vapidPublicKey = await getVapidPublicKey();
-            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+    if (!user || !supportsWebPush() || notificationPermission() !== "granted") return;
 
-            const newSubscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: convertedVapidKey,
-            });
+    const syncSubscription = async () => {
+      try {
+        const subscription =
+          (await getExistingSubscription()) ?? (await createSubscription(await getVapidPublicKey()));
 
-            pushSubscribeMutation.mutate(newSubscription);
-          } else {
-            pushSubscribeMutation.mutate(subscription);
-          }
-        } catch (err) {
-          console.error("Error during push subscription:", err);
-        }
-      });
-    }
+        pushSubscribeMutation.mutate(subscription.toJSON());
+      } catch (err) {
+        console.error("Error al sincronizar la suscripción push:", err);
+      }
+    };
+
+    void syncSubscription();
   }, [user]);
 
   const handleLogout = async () => {

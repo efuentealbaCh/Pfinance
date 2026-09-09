@@ -24,12 +24,5 @@ interface MoneyProps extends Omit<TextProps, 'children'> {
  * Hereda todos los props de Mantine <Text> para color, peso, tamaño, etc.
  */
 export default function Money({ amount, currency = 'CLP', compact = false, ...textProps }: MoneyProps) {
-  // Si la moneda no está soportada explícitamente, tratar como CLP para no romper
-  const safeCurrency = (['CLP', 'USD', 'EUR'].includes(currency)
-    ? currency
-    : 'CLP') as SupportedCurrency;
-
-  const formatted = formatMoney(amount, safeCurrency, { compact });
-
-  return <Text {...textProps}>{formatted}</Text>;
+  return <Text {...textProps}>{formatMoney(amount, currency, { compact })}</Text>;
 }

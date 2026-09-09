@@ -58,17 +58,7 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   getProfile(@Request() req: any) {
-    // totp_secret no se expone nunca, aunque esté encriptado: es el secreto que permite
-    // generar códigos TOTP válidos, no hay motivo para devolverlo al cliente.
-    const { totp_secret, ...user } = req.user;
-    return {
-      user: {
-        ...user,
-        id: user.id,
-        email_verified: !!user.email_verified_at,
-        totp_enabled: !!user.totp_enabled,
-      }
-    };
+    return { user: this.authService.buildProfile(req.user) };
   }
 
   @UseGuards(AuthGuard('jwt'))

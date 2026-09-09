@@ -18,6 +18,7 @@ import {
 import { useForm } from '@mantine/form';
 import { IconPlus, IconTrash, IconAlertCircle, IconLock, IconPencil } from '@tabler/icons-react';
 import api from '../api/axios';
+import { useCurrencies } from '../api/queries';
 
 interface Bank {
   id: string;
@@ -41,6 +42,8 @@ interface AccountFormData {
   account_type_id: string;
   identifier: string;
   balance: number;
+  /** Moneda de la cuenta. Define en qué se expresan su saldo y sus movimientos. */
+  currency: string;
   cards: CardData[];
 }
 
@@ -59,6 +62,7 @@ export default function AccountModal({
 }: AccountModalProps) {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([]);
+  const { data: currencyData } = useCurrencies();
   const [loadingAccountTypes, setLoadingAccountTypes] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +75,7 @@ export default function AccountModal({
       account_type_id: '',
       identifier: '',
       balance: 0,
+      currency: 'CLP',
       cards: [],
     },
     validate: {
@@ -108,6 +113,7 @@ export default function AccountModal({
           account_type_id: editData.account_type_id,
           identifier: editData.identifier,
           balance: editData.balance,
+          currency: editData.currency || 'CLP',
           cards: editData.cards || [],
         });
         // If editing, load account types for the existing bank
@@ -266,18 +272,37 @@ export default function AccountModal({
               {...form.getInputProps('identifier')}
             />
 
-            <NumberInput
-              label="Saldo inicial de la cuenta"
-              placeholder="0.00"
-              min={0}
-              decimalScale={2}
-              fixedDecimalScale
-              thousandSeparator="."
-              decimalSeparator=","
-              required
-              radius="md"
-              {...form.getInputProps('balance')}
-            />
+            <Group grow align="flex-start">
+              <Select
+                label="Moneda"
+                description={
+                  editData
+                    ? 'No se puede cambiar si la cuenta ya tiene movimientos'
+                    : 'En qué moneda están el saldo y los movimientos'
+                }
+                data={(currencyData?.currencies ?? [{ code: 'CLP', decimals: 0 }]).map((c) => ({
+                  value: c.code,
+                  label: c.code,
+                }))}
+                allowDeselect={false}
+                required
+                radius="md"
+                {...form.getInputProps('currency')}
+              />
+
+              <NumberInput
+                label="Saldo inicial de la cuenta"
+                placeholder="0"
+                min={0}
+                decimalScale={form.values.currency === 'CLP' ? 0 : 2}
+                fixedDecimalScale={form.values.currency !== 'CLP'}
+                thousandSeparator="."
+                decimalSeparator=","
+                required
+                radius="md"
+                {...form.getInputProps('balance')}
+              />
+            </Group>
           </Stack>
         </Stepper.Step>
 

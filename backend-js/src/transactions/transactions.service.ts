@@ -20,6 +20,14 @@ const BUDGET_ALERT_THRESHOLDS = [100, 80];
 /** Ruta del frontend que abre el service worker al hacer click en la notificación push. */
 const BUDGETS_FRONTEND_PATH = '/budgets';
 
+/**
+ * Movimientos por página en el listado.
+ *
+ * Se mantiene el valor que ya usaba el `take` fijo anterior, para no cambiarle el tamaño de
+ * página al frontend que acumula resultados a medida que el usuario pide más.
+ */
+const TRANSACTIONS_PAGE_SIZE = 15;
+
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
@@ -81,18 +89,29 @@ export class TransactionsService {
       if (filters.amount_max) where.amount.lte = Number(filters.amount_max);
     }
 
-    const transactions = await this.prisma.transactions.findMany({
-      where,
-      include: {
-        categories: true,
-        user_accounts: { include: { banks: true } },
-        target_accounts: { include: { banks: true } },
-      },
-      orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
-      take: 15,
-    });
+    const page = Math.max(1, Math.trunc(Number(filters.page)) || 1);
 
-    return { data: transactions.map(t => this.mapTransaction(t)) };
+    const [total, transactions] = await this.prisma.$transaction([
+      this.prisma.transactions.count({ where }),
+      this.prisma.transactions.findMany({
+        where,
+        include: {
+          categories: true,
+          user_accounts: { include: { banks: true } },
+          target_accounts: { include: { banks: true } },
+        },
+        orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * TRANSACTIONS_PAGE_SIZE,
+        take: TRANSACTIONS_PAGE_SIZE,
+      }),
+    ]);
+
+    return {
+      data: transactions.map(t => this.mapTransaction(t)),
+      current_page: page,
+      last_page: Math.max(1, Math.ceil(total / TRANSACTIONS_PAGE_SIZE)),
+      total,
+    };
   }
 
   async findOne(id: string, userId: string) {
