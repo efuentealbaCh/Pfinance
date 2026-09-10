@@ -7,6 +7,8 @@ import { AuthProvider } from './context/AuthContext';
 import App from './App';
 
 import './hooks/useInstallPrompt';
+import { iniciarControlDeVersion } from './pwa';
+import PwaUpdateNotice from './components/PwaUpdateNotice';
 
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
@@ -149,11 +151,14 @@ const theme = createTheme({
   },
 });
 
+iniciarControlDeVersion();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="auto">
         <Notifications position="top-right" />
+        <PwaUpdateNotice />
         <BrowserRouter>
           <AuthProvider>
             <App />
