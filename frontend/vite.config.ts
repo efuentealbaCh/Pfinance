@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: null,
       workbox: {
         importScripts: ['/push-sw.js']
       },

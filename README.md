@@ -1,161 +1,252 @@
-# Pfinance - Gestor de Finanzas Personales 💰
+# Pfinance — Gestor de Finanzas Personales 💰
 
-Pfinance es una aplicación web moderna y robusta diseñada para ayudarte a tomar el control total de tus finanzas personales y grupales. Construida con una arquitectura Full-Stack utilizando las tecnologías más recientes, ofrece una experiencia fluida, segura e instalable (PWA) en cualquier dispositivo.
+**Versión 1.0.0**
 
-## ✨ Funcionalidades Principales
+Pfinance es una aplicación web para tomar el control de tus finanzas personales y grupales.
+Construida como PWA instalable, con soporte multimoneda, importación de cartolas bancarias
+chilenas y automatización de gastos recurrentes.
+
+---
+
+## ✨ Funcionalidades
 
 ### 🔐 Autenticación y Seguridad
 
-- Registro e inicio de sesión seguro con JWT (JSON Web Tokens).
-- Gestión de perfil (actualización de datos personales y **RUT** como identificador único).
-- **Seguridad de Datos Sensibles**: El RUT se almacena de forma encriptada (AES-256) en la base de datos para proteger la identidad del usuario.
-- Cambio de contraseña encriptada (bcrypt).
-- Protección de rutas tanto en el Frontend como en el Backend.
+- Registro e inicio de sesión con JWT.
+- **Verificación de correo** con enlace por email (vigencia de 24 horas).
+- **Recuperación de contraseña** por enlace (vigencia de 30 minutos). La respuesta es siempre la
+  misma exista o no el correo, para no filtrar qué direcciones están registradas.
+- **Verificación en dos pasos (2FA)** con TOTP: código QR para Google Authenticator, Authy o
+  similar, y desactivación protegida por contraseña.
+- **Historial de seguridad**: inicios de sesión, cambios de contraseña y activación de 2FA, cada
+  uno con dispositivo e IP. Si se detecta un inicio desde un contexto nuevo, llega un aviso por
+  correo.
+- **RUT encriptado** (AES-256) en la base de datos.
+- Límites de intentos por IP (`@nestjs/throttler`) en registro, login y recuperación.
 
 ### 🏦 Cuentas, Tarjetas y Categorías
-- **Nueva Arquitectura Financiera**: Separación real de Cuentas Bancarias y Tarjetas (Débito/Crédito) como medios de pago.
-- Catálogo de Bancos oficiales chilenos integrados con logos dinámicos (Clearbit API).
-- **Soporte Multi-Cuenta Robusto**: Relación detallada entre Bancos y Tipos de Cuentas (`bank_account_types`) lo que permite un control granular de qué cuentas ofrece cada banco (Vista, Corriente, Ahorro, etc).
-- Creación guiada de cuentas (Wizard / Stepper) para vincular múltiples tarjetas a una misma cuenta bancaria.
-- Opción rápida de "Copiar Datos" para transferencias con un clic.
-- Categorías personalizables para organizar detalladamente en qué gastas tu dinero.
 
-### 🏗️ Arquitectura de Base de Datos
-- **Identificadores Universales (UUID)**: La aplicación utiliza UUID de forma nativa para todas las entidades clave. Esto mejora la seguridad, previene la enumeración de IDs, y facilita la sincronización distribuida en comparación con los IDs numéricos secuenciales tradicionales.
+- Separación real entre cuentas bancarias y tarjetas (débito/crédito) como medios de pago.
+- Catálogo de bancos chilenos con logos dinámicos (Clearbit).
+- Relación entre bancos y tipos de cuenta (`bank_account_types`): cada banco ofrece solo los
+  tipos que realmente tiene.
+- Creación guiada de cuentas con vinculación de múltiples tarjetas.
+- **Copiar datos de transferencia** con un clic: nombre, RUT, tipo de cuenta, número, banco y
+  correo, en el formato que se usa en Chile.
+- Categorías personalizables con ícono y color.
 
-### 🎯 Metas de Ahorro
+### 💱 Multimoneda (CLP / USD)
 
-- Definición de objetivos financieros (ej: "Viaje a Japón", "Fondo de Emergencia").
-- Seguimiento visual del progreso (porcentaje completado) mediante barras de progreso.
+- Moneda por cuenta: una cuenta en pesos y otra en dólares conviven sin mezclarse.
+- **Conversión con la cotización de la fecha de cada movimiento**, no la de hoy, para que
+  recalcular un período viejo no cambie de resultado.
+- Cotizaciones del dólar obtenidas de [mindicador.cl](https://mindicador.cl), con carga inicial
+  de dos años y actualización automática en días hábiles.
+- Los totales del panel, los presupuestos y los reportes se expresan en la moneda base del
+  usuario.
+
+### 📥 Importación de Cartolas Bancarias
+
+- Carga de cartolas en **XLSX, XLS o CSV**.
+- **Detección automática de columnas** por nombre y por contenido: funciona con formatos
+  distintos sin configurar nada.
+- Corrección manual del mapeo cuando el banco usa títulos poco comunes.
+- **Previsualización antes de importar**: se ve exactamente qué movimientos entrarían, sin
+  escribir nada en la base.
+- **Deduplicación por huella digital**: reimportar la misma cartola no duplica movimientos.
+- **Historial con opción de revertir** una importación completa, con ajuste del saldo.
+- El mapeo de columnas se recuerda por banco y por usuario.
+
+### 🔁 Transacciones Recurrentes
+
+- Suscripciones (indefinidas) y créditos en cuotas (con total fijo).
+- Frecuencia semanal, quincenal, mensual o anual.
+- Las cuotas vencidas se derivan comparando contra la fecha actual, así que aparecen aunque el
+  proceso automático no haya corrido.
+- Confirmar una cuota crea el movimiento real con la fecha que le corresponde; omitirla avanza
+  el estado sin registrar nada.
+- Pausar y reanudar sin perder el progreso.
+
+### 📊 Panel y Reportes
+
+- Balance total, ingresos, gastos y evolución en gráficos.
+- Gastos por categoría, progreso de presupuestos y de metas de ahorro.
+- **Resumen mensual** con comparación contra el mes anterior y desglose por categoría, también
+  enviado por correo el día 1 de cada mes.
 
 ### 📉 Presupuestos
 
-- Creación de límites de gasto por categoría (mensual, semanal, anual).
-- Alertas visuales de consumo (colores dinámicos que cambian al acercarse al 100% del presupuesto).
+- Límites de gasto por categoría (semanal, mensual o anual).
+- El consumo se calcula **convirtiendo cada movimiento a la moneda base**, no sumando montos de
+  distintas monedas.
+- Alertas al 80% y al 100%, por pantalla, correo o notificación push.
+
+### 🎯 Metas de Ahorro
+
+- Objetivos con monto, fecha y seguimiento de progreso.
+- Depósitos y retiros con historial de movimientos.
 
 ### 🤝 Grupos y Deudas Compartidas
 
-- Creación de grupos para gestionar gastos compartidos (ideal para compañeros de piso, viajes o parejas).
-- Sistema de invitaciones (aceptar/rechazar).
-- Registro de quién pagó qué y cálculo automático de saldos (quién le debe a quién).
+- Grupos para gastos compartidos, con invitaciones (aceptar/rechazar).
+- **Flujo de pago en dos pasos**: el deudor declara que pagó y el acreedor confirma que recibió,
+  o rechaza indicando el motivo. Una parte declarada no se da por saldada hasta la confirmación.
+- Saldos por miembro separando lo que se debe, lo declarado sin confirmar y lo ya saldado.
 
-### 📥 Exportación de Datos
+### 📤 Exportación
 
-- Exportación de transacciones a formato Excel (XLSX) filtrando por rangos de fechas, ideal para contabilidad externa.
+- Transacciones a **Excel (XLSX) o PDF**, filtrando por rango de fechas.
 
 ### 📱 PWA (Progressive Web App)
 
-- La aplicación puede instalarse nativamente en móviles y escritorios para una experiencia similar a una app nativa.
+- Instalable en móvil y escritorio, con aviso guiado de instalación en iOS.
+- **Notificaciones push** (Web Push / VAPID) para cuotas por vencer y movimientos en deudas
+  compartidas, con control para activarlas y desactivarlas por dispositivo.
+- **Aviso de versión nueva**: cuando hay una actualización publicada, la app lo informa y el
+  usuario decide cuándo aplicarla, en vez de recargarse sola en medio de una tarea.
 
-### 🔄 Sincronización Webhook (Local ↔ Remoto)
-- Prisma Middleware incorporado para interceptar mutaciones locales (Crear, Actualizar, Eliminar).
-- Disparo automático de webhooks seguros hacia el servidor de producción para mantener las bases de datos (Supabase) 100% espejadas en tiempo real.
+### 🔄 Sincronización Webhook (Local → Producción)
+
+- Middleware de Prisma que intercepta las mutaciones locales y las replica al servidor de
+  producción. Se activa solo con `SYNC_TO_REMOTE=true`, y nunca en producción.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-**Frontend:**
+**Frontend**
 
-- [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) (Rendimiento ultra rápido)
-- [TypeScript](https://www.typescriptlang.org/) (Tipado estricto)
-- [Mantine v7](https://mantine.dev/) (Sistema de componentes de interfaz y diseño moderno)
-- [Recharts](https://recharts.org/) (Gráficos)
-- [React Query](https://tanstack.com/query) (Gestión de estado y peticiones asíncronas)
-
-**Backend:**
-
-- [NestJS](https://nestjs.com/) (Framework Node.js estructurado y escalable)
+- [React 18](https://react.dev/) + [Vite 6](https://vitejs.dev/)
 - [TypeScript](https://www.typescriptlang.org/)
-- [Prisma ORM](https://www.prisma.io/) (Interacción con base de datos)
-- [PostgreSQL](https://www.postgresql.org/) (Base de datos alojada en Supabase o Local)
+- [Mantine 8](https://mantine.dev/) — componentes e interfaz
+- [Recharts](https://recharts.org/) — gráficos
+- [TanStack Query 5](https://tanstack.com/query) — estado del servidor
+- [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) — service worker y manifiesto
+
+**Backend**
+
+- [NestJS 11](https://nestjs.com/) sobre Node.js
+- [Prisma 5](https://www.prisma.io/) + [PostgreSQL](https://www.postgresql.org/)
+- [Passport JWT](https://www.passportjs.org/), [bcrypt](https://www.npmjs.com/package/bcrypt),
+  [otplib](https://www.npmjs.com/package/otplib) — autenticación y 2FA
+- [Nodemailer](https://nodemailer.com/) — correo transaccional
+- [web-push](https://www.npmjs.com/package/web-push) — notificaciones
+- [SheetJS](https://sheetjs.com/) — lectura de cartolas
 
 ---
 
-## 🐳 Proceso de Instalación: Despliegue con Docker (Recomendado)
-
-Pfinance está preparado para ser desplegado fácilmente utilizando contenedores. A continuación, te mostramos cómo levantar toda la arquitectura basándose en los archivos actuales.
+## 🐳 Instalación con Docker (recomendado)
 
 ### 1. Requisitos
 
-- [Docker](https://www.docker.com/) y [Docker Compose](https://docs.docker.com/compose/) instalados en tu máquina.
+- [Docker](https://www.docker.com/) y Docker Compose.
 
-### 2. Levantar los contenedores
-
-En la raíz del proyecto, asegúrate de que el archivo `docker-compose.yml` esté presente. Simplemente ejecuta:
+### 2. Variables de entorno
 
 ```bash
-docker-compose up -d --build
+cp backend-js/.env.example backend-js/.env
 ```
 
-Esto descargará las imágenes necesarias, construirá el Backend y el Frontend, y aprovisionará una base de datos local lista para ser utilizada.
+Editá `backend-js/.env` con tus valores. El archivo documenta cada variable; las mínimas para
+levantar son `DATABASE_URL`, `DIRECT_URL` y `JWT_SECRET`.
 
-### 3. Migraciones y Base de Datos (Opcional si es la primera vez)
-Una vez que el backend esté arriba, si necesitas aplicar o resetear la base de datos (con datos de prueba, bancos y tipos de cuenta), ejecuta el siguiente comando:
+### 3. Levantar los contenedores
+
+```bash
+docker compose up -d --build
+```
+
+### 4. Base de datos
 
 ```bash
 docker exec pfinance_backend_js npm run prisma:reset
 ```
 
-¡Listo!
+Aplica las migraciones y siembra bancos, tipos de cuenta y categorías. El comando aborta si
+`DATABASE_URL` no apunta a una base local, para que no borre producción por accidente.
 
-- Tu **Frontend** estará corriendo en: `http://localhost:5173`
-- Tu **Backend** estará corriendo en: `http://localhost:3000`
-- Tu **Base de datos** PostgreSQL estará escuchando en el puerto `5432`.
+Queda corriendo:
+
+- **Frontend**: `http://localhost:5173`
+- **Backend**: `http://localhost:3000`
+- **PostgreSQL**: puerto `5432`
+
+> Para probar desde el teléfono en la misma red, usá la IP del equipo
+> (`http://192.168.x.x:5173`). Tené en cuenta que sobre HTTP sin certificado el navegador no
+> registra el service worker: las notificaciones push y la instalación de la PWA solo funcionan
+> en `localhost` o con HTTPS.
 
 ---
 
-## 🚀 Proceso de Instalación Local (Sin Docker)
+## 💻 Instalación local (sin Docker)
 
-Si prefieres ejecutar el proyecto directamente en tu entorno (ideal para desarrollo intensivo), sigue estos pasos.
+### Requisitos
 
-### Requisitos Previos
-- Node.js (v18 o superior)
-- PostgreSQL (Local o una base de datos en Supabase)
+- Node.js 20 o superior.
+- PostgreSQL local, o una base en Supabase.
 
-### 1. Configurar el Backend
+### Backend
+
 ```bash
 cd backend-js
 npm install
-```
-Crea un archivo `.env` en `backend-js/` basándote en un posible `.env.example`:
-```env
-DATABASE_URL="postgresql://usuario:password@localhost:5432/pfinance"
-JWT_SECRET="tu_super_secreto_aqui"
-PORT=3000
-ENCRYPTION_KEY="una_llave_de_32_caracteres_secur" # Llave AES-256 para RUT
-```
-Aplica las migraciones de Prisma y rellena la base de datos, luego inicia el servidor:
-```bash
+cp .env.example .env     # completar valores
 npx prisma migrate dev
 npm run start:dev
 ```
 
-### 2. Configurar el Frontend
-Abre otra terminal:
+### Frontend
+
 ```bash
 cd frontend
 npm install
-```
-Crea un archivo `.env` en `frontend/`:
-```env
-VITE_API_URL="http://localhost:3000/api"
-```
-Inicia el entorno de desarrollo:
-```bash
 npm run dev
 ```
 
----
-
-## 🌍 Despliegue en Producción (Cloud)
-
-Actualmente, el proyecto está optimizado para entornos de producción modernos:
-
-- **Backend:** Alojado en Render u otro servicio PAAS, exponiendo la API por HTTPS.
-- **Frontend:** Desplegado en Vercel, consumiendo la variable de entorno `VITE_API_URL` que apunta al servidor backend.
-- **Base de Datos:** PostgreSQL administrado por Supabase usando PGBouncer (Pooler) para optimizar conexiones simultáneas.
+En desarrollo no hace falta configurar `VITE_API_URL`: Vite redirige `/api` al backend. La
+variable solo se usa en el build de producción.
 
 ---
 
-> Desarrollado con dedicación para ofrecer la mejor herramienta de gestión financiera. 📈
+## ⚙️ Variables de entorno
+
+La referencia completa, con el porqué de cada una, está en:
+
+- [`backend-js/.env.example`](backend-js/.env.example) — desarrollo
+- [`backend-js/.env.production.example`](backend-js/.env.production.example) — producción, e
+  incluye cuáles **no** deben configurarse allí
+
+Dos advertencias que no son obvias:
+
+- **`JWT_SECRET` también cifra el RUT.** La clave AES se deriva de este valor, así que rotarlo
+  deja ilegibles los RUT ya guardados: hay que volver a cargarlos. No existe ninguna variable
+  `ENCRYPTION_KEY` separada.
+- **`DIRECT_URL` es obligatoria para migrar.** En Supabase, `DATABASE_URL` apunta al pooler de
+  transacciones (puerto 6543), donde `prisma migrate` se cuelga porque pierde su advisory lock.
+  `DIRECT_URL` apunta al session pooler (5432) y Prisma la elige sola al migrar. Sin ella,
+  cualquier comando `migrate` falla con `P1012`; `prisma generate` no la necesita.
+
+---
+
+## 🌍 Despliegue en producción
+
+- **Backend**: Render, exponiendo la API por HTTPS.
+- **Frontend**: Vercel, con `VITE_API_URL` apuntando al backend.
+- **Base de datos**: PostgreSQL en Supabase, con PgBouncer.
+
+El plan gratuito de Render duerme el servicio tras un rato de inactividad. El diseño lo
+contempla: los procesos programados (cotizaciones, avisos de cuotas, resumen mensual) tienen un
+disparador bajo demanda que se ejecuta cuando el usuario entra, así que un servicio dormido no
+deja huecos en los datos.
+
+---
+
+## 🧪 Tests
+
+```bash
+cd backend-js && npm test
+```
+
+---
+
+> Desarrollado para llevar las cuentas claras. 📈
