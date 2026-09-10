@@ -53,12 +53,12 @@ export default function NotificationsCard() {
         let cancelled = false;
 
         const resolveState = async () => {
-            if (isIOS() && !isStandalone()) {
-                setState('ios-needs-install');
-                return;
-            }
             if (!isSecureOrigin()) {
                 setState('insecure-origin');
+                return;
+            }
+            if (isIOS() && !isStandalone()) {
+                setState('ios-needs-install');
                 return;
             }
             if (!supportsWebPush()) {
@@ -160,8 +160,9 @@ export default function NotificationsCard() {
             {state === 'insecure-origin' && (
                 <Alert color="orange" variant="light" radius="md" icon={<IconLock size={18} />}>
                     Esta página no se está sirviendo por HTTPS, así que el navegador no permite registrar
-                    notificaciones. Pasa al abrir la app por la IP de la red local; funciona en{' '}
-                    <code>localhost</code> y en el sitio publicado.
+                    notificaciones ni instalar la app. Es lo que pasa al abrirla por la IP de la red local
+                    desde el teléfono: funciona en <code>localhost</code> y en el sitio publicado. En iPhone,
+                    instalarla desde una dirección así tampoco habilita los avisos.
                 </Alert>
             )}
 

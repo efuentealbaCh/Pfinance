@@ -15,6 +15,7 @@ import {
     Loader,
     Center,
 } from '@mantine/core';
+import { toDateParam } from '../utils/date';
 import { DateInput } from '@mantine/dates';
 import {
     AreaChart,
@@ -82,14 +83,10 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
 
     const params: Record<string, string> = {};
     if (accountId) params.user_account_id = accountId;
-    if (dateFrom) {
-        const d = new Date(dateFrom);
-        if (!isNaN(d.getTime())) params.date_from = d.toISOString().split('T')[0];
-    }
-    if (dateTo) {
-        const d = new Date(dateTo);
-        if (!isNaN(d.getTime())) params.date_to = d.toISOString().split('T')[0];
-    }
+    const desde = toDateParam(dateFrom);
+    if (desde) params.date_from = desde;
+    const hasta = toDateParam(dateTo);
+    if (hasta) params.date_to = hasta;
 
     const { data, isLoading, isError } = useDashboardSummary(params);
 
@@ -99,6 +96,13 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
     const chartData = data?.chartData || [];
     const budgetProgress = data?.budgetProgress || [];
     const savingsGoals = data?.savingsGoals || [];
+
+    /** Totales del período, en el orden en que se muestran. */
+    const resumenTotales = [
+        { label: 'Ingresos totales', value: summary.totalIncome, color: 'teal' },
+        { label: 'Gastos totales', value: summary.totalExpense, color: 'red' },
+        { label: 'Balance neto', value: summary.balance, color: summary.balance >= 0 ? 'teal' : 'red' },
+    ];
 
     useEffect(() => {
         if (isError) {
@@ -248,31 +252,32 @@ export default function DashboardAnalytics({ accounts }: DashboardAnalyticsProps
             ) : (
                 <>
             {/* ─── Tarjetas de Resumen ───────────────────────────── */}
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <Paper withBorder p="xl" radius="md">
-                    <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
-                        ingresos Totales
-                    </Text>
-                    <Text fw={700} size="xl" c="teal">
-                        {formatMoney(summary.totalIncome, currency)}
-                    </Text>
-                </Paper>
-                <Paper withBorder p="xl" radius="md">
-                    <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
-                        gastos Totales
-                    </Text>
-                    <Text fw={700} size="xl" c="red">
-                        {formatMoney(summary.totalExpense, currency)}
-                    </Text>
-                </Paper>
-                <Paper withBorder p="xl" radius="md">
-                    <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
-                        Balance Neto
-                    </Text>
-                    <Text fw={700} size="xl" c={summary.balance >= 0 ? 'teal' : 'red'}>
-                        {formatMoney(summary.balance, currency)}
-                    </Text>
-                </Paper>
+            <Stack gap="xs" hiddenFrom="sm">
+                {resumenTotales.map((tile) => (
+                    <Paper key={tile.label} withBorder p="sm" radius="md">
+                        <Group justify="space-between" wrap="nowrap" gap="sm">
+                            <Text c="dimmed" size="xs" fw={600} tt="uppercase" lineClamp={1}>
+                                {tile.label}
+                            </Text>
+                            <Text fw={700} size="lg" c={tile.color} style={{ whiteSpace: 'nowrap' }}>
+                                {formatMoney(tile.value, currency)}
+                            </Text>
+                        </Group>
+                    </Paper>
+                ))}
+            </Stack>
+
+            <SimpleGrid cols={3} spacing="md" visibleFrom="sm">
+                {resumenTotales.map((tile) => (
+                    <Paper key={tile.label} withBorder p="xl" radius="md">
+                        <Text c="dimmed" size="xs" fw={600} tt="uppercase" mb={4}>
+                            {tile.label}
+                        </Text>
+                        <Text fw={700} size="xl" c={tile.color}>
+                            {formatMoney(tile.value, currency)}
+                        </Text>
+                    </Paper>
+                ))}
             </SimpleGrid>
 
             <Divider />

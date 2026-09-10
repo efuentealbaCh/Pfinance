@@ -15,6 +15,8 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconAlertCircle, IconAlertTriangle, IconBuildingBank, IconCoin, IconDownload, IconFileImport, IconPlus } from '@tabler/icons-react';
+import { formatMoney } from '../utils/money';
+import { toDateParam } from '../utils/date';
 import { useTransactions, useCatalogs, useDeleteTransaction } from '../api/queries';
 import TransactionModal from '../components/TransactionModal';
 import TransactionList, { type TransactionFilters } from '../components/TransactionList';
@@ -79,8 +81,10 @@ export default function TransactionsPage() {
     if (filters.type) queryParams.type = filters.type;
     if (filters.category_id) queryParams.category_id = filters.category_id;
     if (filters.user_account_id) queryParams.user_account_id = filters.user_account_id;
-    if (filters.date_from) queryParams.date_from = filters.date_from.toISOString().split('T')[0];
-    if (filters.date_to) queryParams.date_to = filters.date_to.toISOString().split('T')[0];
+    const desde = toDateParam(filters.date_from);
+    const hasta = toDateParam(filters.date_to);
+    if (desde) queryParams.date_from = desde;
+    if (hasta) queryParams.date_to = hasta;
     if (filters.amount_min) queryParams.amount_min = String(filters.amount_min);
     if (filters.amount_max) queryParams.amount_max = String(filters.amount_max);
 
@@ -188,6 +192,17 @@ export default function TransactionsPage() {
         .filter((t) => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
+    /** Totales del listado, en el orden en que se muestran. */
+    const resumenMovimientos = [
+        { label: 'Ingresos', text: `+${formatMoney(totalIncome)}`, color: 'teal' },
+        { label: 'Gastos', text: `-${formatMoney(totalExpense)}`, color: 'red' },
+        {
+            label: 'Balance',
+            text: formatMoney(totalIncome - totalExpense),
+            color: totalIncome - totalExpense >= 0 ? 'teal' : 'red',
+        },
+    ];
+
     return (
         <>
             <Container size="md" py="xl">
@@ -254,37 +269,32 @@ export default function TransactionsPage() {
 
                     <Stack gap="md">
                         {/* ─── Resumen ──────────────────────────────────── */}
-                        <Group grow>
-                            <Paper withBorder p="md" radius="md">
-                                <Text c="dimmed" size="xs" mb={2}>
-                                    Ingresos
-                                </Text>
-                                <Text fw={700} size="lg" c="teal">
-                                    +${totalIncome.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
-                                </Text>
-                            </Paper>
-                            <Paper withBorder p="md" radius="md">
-                                <Text c="dimmed" size="xs" mb={2}>
-                                    Gastos
-                                </Text>
-                                <Text fw={700} size="lg" c="red">
-                                    -${totalExpense.toLocaleString('es-CL', { minimumFractionDigits: 2 })}
-                                </Text>
-                            </Paper>
-                            <Paper withBorder p="md" radius="md">
-                                <Text c="dimmed" size="xs" mb={2}>
-                                    Balance
-                                </Text>
-                                <Text
-                                    fw={700}
-                                    size="lg"
-                                    c={totalIncome - totalExpense >= 0 ? 'teal' : 'red'}
-                                >
-                                    ${(totalIncome - totalExpense).toLocaleString('es-CL', {
-                                        minimumFractionDigits: 2,
-                                    })}
-                                </Text>
-                            </Paper>
+                        <Stack gap="xs" hiddenFrom="sm">
+                            {resumenMovimientos.map((tile) => (
+                                <Paper key={tile.label} withBorder p="sm" radius="md">
+                                    <Group justify="space-between" wrap="nowrap" gap="sm">
+                                        <Text c="dimmed" size="xs" lineClamp={1}>
+                                            {tile.label}
+                                        </Text>
+                                        <Text fw={700} size="lg" c={tile.color} style={{ whiteSpace: 'nowrap' }}>
+                                            {tile.text}
+                                        </Text>
+                                    </Group>
+                                </Paper>
+                            ))}
+                        </Stack>
+
+                        <Group grow visibleFrom="sm">
+                            {resumenMovimientos.map((tile) => (
+                                <Paper key={tile.label} withBorder p="md" radius="md">
+                                    <Text c="dimmed" size="xs" mb={2}>
+                                        {tile.label}
+                                    </Text>
+                                    <Text fw={700} size="lg" c={tile.color}>
+                                        {tile.text}
+                                    </Text>
+                                </Paper>
+                            ))}
                         </Group>
 
                         <Divider label="Historial" labelPosition="center" />

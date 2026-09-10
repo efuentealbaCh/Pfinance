@@ -7,6 +7,7 @@ import {
     SegmentedControl,
     Group,
 } from '@mantine/core';
+import { toDateParam } from '../utils/date';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconFileSpreadsheet, IconFileTypePdf } from '@tabler/icons-react';
@@ -28,14 +29,10 @@ export default function ExportModal({ opened, onClose }: ExportModalProps) {
         try {
             const params = new URLSearchParams();
             params.append('format', format);
-            if (dateFrom) {
-                const dFrom = new Date(dateFrom);
-                if (!isNaN(dFrom.getTime())) params.append('date_from', dFrom.toISOString().split('T')[0]);
-            }
-            if (dateTo) {
-                const dTo = new Date(dateTo);
-                if (!isNaN(dTo.getTime())) params.append('date_to', dTo.toISOString().split('T')[0]);
-            }
+            const desde = toDateParam(dateFrom);
+            if (desde) params.append('date_from', desde);
+            const hasta = toDateParam(dateTo);
+            if (hasta) params.append('date_to', hasta);
 
             // Request with responseType blob to handle file download
             const response = await api.get(`/export/transactions?${params.toString()}`, {

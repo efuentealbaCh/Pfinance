@@ -123,9 +123,6 @@ export default function DashboardPage() {
             </Text>
           </Paper>
 
-          {/* ─── Analíticas y Gráficos ─────────────────────── */}
-          <DashboardAnalytics accounts={accounts} />
-
           {/* ─── Acciones de Cuentas ───────────────────────── */}
           <Divider label="Mis cuentas" labelPosition="center" />
 
@@ -171,6 +168,10 @@ export default function DashboardPage() {
               onDelete={handleDelete}
             />
           </Collapse>
+
+          {/* ─── Analíticas y Gráficos ─────────────────────── */}
+          <DashboardAnalytics accounts={accounts} />
+
         </Stack>
       </Container>
 

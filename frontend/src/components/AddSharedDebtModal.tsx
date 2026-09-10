@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Modal, TextInput, NumberInput, Button, Stack, Table, Text, Group } from '@mantine/core';
+import { toDateParam } from '../utils/date';
 import { useForm } from '@mantine/form';
 import { DatePickerInput } from '@mantine/dates';
 import { useCreateSharedDebt } from '../api/queries';
@@ -58,7 +59,7 @@ export default function AddSharedDebtModal({ opened, close, groupId, members }: 
         data: {
           title: values.title,
           amount: values.amount,
-          date: values.date.toISOString().split('T')[0],
+          date: toDateParam(values.date),
           splits: values.splits
         }
       },

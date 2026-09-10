@@ -13,6 +13,8 @@ import {
     NumberInput,
     Avatar,
 } from '@mantine/core';
+import { formatDateDisplay } from '../utils/date';
+import { formatMoney } from '../utils/money';
 import { DateInput } from '@mantine/dates';
 import { useState } from 'react';
 import {
@@ -39,6 +41,7 @@ interface Transaction {
         id: string;
         identifier: string | null;
         bank: { id: string; name: string; logo?: string | null };
+        currency?: string;
     };
     target_account?: {
         id: string;
@@ -75,8 +78,8 @@ export interface TransactionFilters {
     type: string;
     category_id: string;
     user_account_id: string;
-    date_from: Date | null;
-    date_to: Date | null;
+    date_from: string | null;
+    date_to: string | null;
     amount_min: string | number;
     amount_max: string | number;
 }
@@ -319,7 +322,7 @@ export default function TransactionList({
                                         •
                                     </Text>
                                     <Text c="dimmed" size="xs">
-                                        {new Date(tx.date).toLocaleDateString('es-CL')}
+                                        {formatDateDisplay(tx.date)}
                                     </Text>
                                 </Group>
                                 {tx.description && (
@@ -336,10 +339,8 @@ export default function TransactionList({
                                     c={tx.type === 'income' ? 'teal' : tx.type === 'expense' ? 'red' : 'blue'}
                                     style={{ whiteSpace: 'nowrap' }}
                                 >
-                                    {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}$
-                                    {Number(tx.amount).toLocaleString('es-CL', {
-                                        minimumFractionDigits: 2,
-                                    })}
+                                    {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}
+                                    {formatMoney(Number(tx.amount), tx.user_account?.currency)}
                                 </Text>
 
                                 <Tooltip label="Editar">

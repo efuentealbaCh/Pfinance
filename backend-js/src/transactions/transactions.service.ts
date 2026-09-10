@@ -72,6 +72,7 @@ export class TransactionsService {
     const where: any = { user_id: userId };
 
     if (filters.type) where.type = filters.type;
+    if (filters.category_id) where.category_id = filters.category_id;
     if (filters.user_account_id) {
       where.OR = [
         { user_account_id: filters.user_account_id },
