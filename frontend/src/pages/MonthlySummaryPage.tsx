@@ -39,11 +39,16 @@ function describeMonth(key: string): string {
     return `${MONTH_NAMES[Number(month) - 1]} de ${year}`;
 }
 
-/** Mes anterior al actual en `YYYY-MM`. Es el mismo default que aplica el backend. */
-function previousMonthKey(): string {
+/**
+ * Mes en curso en `YYYY-MM`, tomado del calendario local.
+ *
+ * Es el mes con el que abre la pantalla. El backend, en cambio, usa el mes anterior cuando no
+ * se le indica ninguno, porque su default está pensado para el correo del día 1, que reporta el
+ * mes que terminó. Acá el usuario entra a ver cómo va el mes que está viviendo.
+ */
+function currentMonthKey(): string {
     const now = new Date();
-    const date = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
 interface VariationBadgeProps {
@@ -87,7 +92,7 @@ function VariationBadge({ variation, higherIsBetter, currency }: VariationBadgeP
  * es un mes sin resumen.
  */
 export default function MonthlySummaryPage() {
-    const [month, setMonth] = useState(previousMonthKey());
+    const [month, setMonth] = useState(currentMonthKey());
     const { data, isLoading, isError, error } = useMonthlySummary(month);
 
     const currency = data?.currency ?? 'CLP';
